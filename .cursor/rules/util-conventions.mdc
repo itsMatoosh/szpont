@@ -1,0 +1,27 @@
+---
+description: Util file and folder naming conventions
+alwaysApply: true
+---
+
+# Util File Conventions
+
+All utility code must follow this structure:
+
+- Root folder: `util/` (never `utils/`)
+- Group related utils in a themed subfolder: `util/<theme>/`
+- Each file is named `<name>.util.ts`
+
+## Examples
+
+```
+util/supabase/supabase.util.ts
+util/date/date.util.ts
+util/api/api.util.ts
+util/storage/storage.util.ts
+```
+
+## Rules
+
+- Never place util files directly in `util/` — always use a subfolder
+- The subfolder name and file name should share the same theme/name
+- Import using the full path: `import { supabase } from '@/util/supabase/supabase.util'`
