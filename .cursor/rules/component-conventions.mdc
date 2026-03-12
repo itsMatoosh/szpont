@@ -1,0 +1,27 @@
+---
+description: Component file and folder naming conventions
+alwaysApply: true
+---
+
+# Component File Conventions
+
+All distinct, reusable components must be extracted into their own files following this structure:
+
+- Root folder: `components/`
+- Group related components in a themed subfolder: `components/<theme>/`
+- Each file is named `<name>.component.tsx`
+
+## Examples
+
+```
+components/zone-card/zone-card.component.tsx
+components/button/button.component.tsx
+components/avatar/avatar.component.tsx
+```
+
+## Rules
+
+- Never place component files directly in `components/` — always use a subfolder
+- The subfolder name and file name should share the same theme/name
+- Import using the full path: `import { ZoneCard } from '@/components/zone-card/zone-card.component'`
+- Inline components (not reused outside their parent file) do not need to be extracted

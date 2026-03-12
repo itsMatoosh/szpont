@@ -1,0 +1,12 @@
+{
+  "tabs": {
+    "home": "Home",
+    "profile": "Profile"
+  },
+  "home": {
+    "title": "Home"
+  },
+  "profile": {
+    "title": "Profile"
+  }
+}

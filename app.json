@@ -2,6 +2,7 @@
   "expo": {
     "name": "szpont",
     "slug": "szpont",
+    "scheme": "szpont",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

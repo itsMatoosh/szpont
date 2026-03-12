@@ -1,0 +1,45 @@
+---
+description: Inline comments, JSDoc, and inline function documentation standards
+alwaysApply: true
+---
+
+# Comments & Documentation
+
+## JSDoc on all exported symbols
+
+Every exported function, component, hook, type, and constant must have a JSDoc comment explaining its purpose.
+
+```ts
+/** Returns the Supabase client typed against the project schema. */
+export const supabase = createClient<Database>(url, key);
+
+/** Fetches all zones from the database. */
+export async function getZones(): Promise<Zone[]> { ... }
+```
+
+## Inline comments for non-obvious logic
+
+Add a short `//` comment whenever the intent behind a line or block is not self-evident from the code alone.
+
+```ts
+// Decay toward zero so parallax naturally returns to center when the device is still
+accX.current = (accX.current + y * DT * SENSITIVITY) * DECAY;
+```
+
+## Document inline functions (callbacks, worklets)
+
+Named inline functions and worklet helpers must have a comment explaining what they do and, if non-trivial, why.
+
+```ts
+// Clamps value to [-max, max] — runs on the UI thread as a Reanimated worklet
+function clamp(value: number, min: number, max: number) {
+  'worklet';
+  return Math.min(Math.max(value, min), max);
+}
+```
+
+## Rules
+
+- Do NOT add comments that just restate the code ("increment counter", "return result")
+- Comments should explain **intent**, **trade-offs**, or **constraints** that the code cannot express on its own
+- Keep comments up to date when code changes

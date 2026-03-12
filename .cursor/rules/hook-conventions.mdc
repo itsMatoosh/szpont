@@ -1,0 +1,27 @@
+---
+description: Hook file and folder naming conventions
+alwaysApply: true
+---
+
+# Hook File Conventions
+
+All custom hooks must follow this structure:
+
+- Root folder: `hooks/` (never `hook/`)
+- Group related hooks in a themed subfolder: `hooks/<theme>/`
+- Each file is named `use-<name>.hook.ts`
+
+## Examples
+
+```
+hooks/device-motion/use-device-motion.hook.ts
+hooks/auth/use-auth.hook.ts
+hooks/zones/use-zones.hook.ts
+```
+
+## Rules
+
+- Never place hook files directly in `hooks/` — always use a subfolder
+- The subfolder name and file name should share the same theme/name
+- File name must start with `use-`
+- Import using the full path: `import { useDeviceMotion } from '@/hooks/device-motion/use-device-motion.hook'`
