@@ -8,5 +8,12 @@
   },
   "profile": {
     "title": "Profile"
+  },
+  "auth": {
+    "subtitle": "see you outside ;)",
+    "signInWithGoogle": "Sign in with Google",
+    "signInWithApple": "Sign in with Apple",
+    "signInFailed": "Sign-in failed",
+    "disclaimer": "By signing in you agree to our Terms of Service and Privacy Policy."
   }
 }

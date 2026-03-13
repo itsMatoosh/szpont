@@ -38,7 +38,13 @@
       "expo-sqlite",
       "expo-router",
       "expo-system-ui",
-      "expo-localization"
+      "expo-localization",
+      "expo-image",
+      "expo-apple-authentication",
+      "@react-native-google-signin/google-signin",
+      "expo-video",
+      "expo-asset",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true

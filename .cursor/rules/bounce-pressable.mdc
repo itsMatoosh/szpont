@@ -1,0 +1,46 @@
+---
+description: All tappable components must use RNBounceable for spring press feedback
+alwaysApply: true
+---
+
+# Bounceable Tappable Components
+
+Every tappable element in the app must produce a spring scale bounce on press. Never use a bare `Pressable` without bounce feedback.
+
+## Standard case
+
+Use `RNBounceable` from `@freakycoder/react-native-bounceable` as a wrapper around any tappable content:
+
+```tsx
+import RNBounceable from '@freakycoder/react-native-bounceable';
+
+<RNBounceable onPress={handlePress}>
+  <View className="bg-primary rounded-2xl py-4 items-center justify-center">
+    <Text>Tap me</Text>
+  </View>
+</RNBounceable>
+```
+
+Put visual styling (background, border radius, padding) on an inner `View` child — `RNBounceable` handles sizing and press behaviour.
+
+## Link asChild case
+
+When `Link asChild` (expo-router) needs to inject navigation into the tappable element, use `RNBounceable` as the direct child of `Link`:
+
+```tsx
+import RNBounceable from '@freakycoder/react-native-bounceable';
+
+<Link href="/somewhere" asChild>
+  <RNBounceable>
+    <Link.AppleZoom>
+      {/* content */}
+    </Link.AppleZoom>
+  </RNBounceable>
+</Link>
+```
+
+## Rules
+
+- Never use a bare `Pressable` — always use `RNBounceable`
+- Never use `TouchableOpacity` or `TouchableHighlight` — use `RNBounceable` instead
+- Import: `import RNBounceable from '@freakycoder/react-native-bounceable'`

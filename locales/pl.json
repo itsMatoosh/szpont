@@ -8,5 +8,12 @@
   },
   "profile": {
     "title": "Profil"
+  },
+  "auth": {
+    "subtitle": "widzimy się na mieście ;)",
+    "signInWithGoogle": "Zaloguj się przez Google",
+    "signInWithApple": "Zaloguj się przez Apple",
+    "signInFailed": "Logowanie nie powiodło się",
+    "disclaimer": "Logując się, akceptujesz nasz Regulamin i Politykę Prywatności."
   }
 }
