@@ -3,8 +3,11 @@ import { supabase } from '@/util/supabase/supabase.util';
 
 export type Zone = Database['public']['Tables']['zones']['Row'];
 
+/** Fetches all zones. */
 export async function getZones(): Promise<Zone[]> {
-  const { data, error } = await supabase.from('zones').select('id, name, background_image, foreground_image, logo_image');
+  const { data, error } = await supabase
+    .from('zones')
+    .select('id, name, city_id, background_image, foreground_image, logo_image');
   if (error) throw error;
   return data;
 }
@@ -13,7 +16,7 @@ export async function getZones(): Promise<Zone[]> {
 export async function getZone(id: string): Promise<Zone> {
   const { data, error } = await supabase
     .from('zones')
-    .select('id, name, background_image, foreground_image, logo_image')
+    .select('id, name, city_id, background_image, foreground_image, logo_image')
     .eq('id', id)
     .single();
   if (error) throw error;

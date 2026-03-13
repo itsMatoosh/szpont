@@ -15,5 +15,14 @@
     "signInWithApple": "Sign in with Apple",
     "signInFailed": "Sign-in failed",
     "disclaimer": "By signing in you agree to our Terms of Service and Privacy Policy."
+  },
+  "locationGate": {
+    "foregroundTitle": "Enable Location",
+    "foregroundMessage": "We need your location to show you nearby Szpont zones.",
+    "backgroundTitle": "Enable Background Location",
+    "backgroundMessage": "We use background location to detect when you're in a Szpont zone.",
+    "grant": "Continue",
+    "openSettings": "Open Settings",
+    "restricted": "Location access is restricted on this device."
   }
 }

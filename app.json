@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "szpont",
+    "name": "Szpont",
     "slug": "szpont",
     "scheme": "szpont",
     "version": "1.0.0",
@@ -14,7 +14,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.szpont"
+      "bundleIdentifier": "app.szpont",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +26,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": true
+      "predictiveBackGestureEnabled": true,
+      "package": "app.szpont"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -41,10 +45,16 @@
       "expo-localization",
       "expo-image",
       "expo-apple-authentication",
-      "@react-native-google-signin/google-signin",
       "expo-video",
       "expo-asset",
-      "expo-font"
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "We use your location to detect when you're in a Szpont zone.",
+          "locationWhenInUsePermission": "We use your location to show you nearby Szpont zones.",
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

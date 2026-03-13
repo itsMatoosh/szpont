@@ -39,9 +39,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      cities: {
+        Row: {
+          id: string
+          name: string
+          latitude: number
+          longitude: number
+          radius: number
+        }
+        Insert: {
+          id?: string
+          name: string
+          latitude: number
+          longitude: number
+          radius: number
+        }
+        Update: {
+          id?: string
+          name?: string
+          latitude?: number
+          longitude?: number
+          radius?: number
+        }
+        Relationships: []
+      }
+      geofences: {
+        Row: {
+          id: string
+          zone_id: string
+          latitude: number
+          longitude: number
+          radius: number
+        }
+        Insert: {
+          id?: string
+          zone_id: string
+          latitude: number
+          longitude: number
+          radius: number
+        }
+        Update: {
+          id?: string
+          zone_id?: string
+          latitude?: number
+          longitude?: number
+          radius?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geofences_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       zones: {
         Row: {
           background_image: string | null
+          city_id: string | null
           foreground_image: string | null
           id: string
           logo_image: string | null
@@ -49,6 +106,7 @@ export type Database = {
         }
         Insert: {
           background_image?: string | null
+          city_id?: string | null
           foreground_image?: string | null
           id?: string
           logo_image?: string | null
@@ -56,12 +114,21 @@ export type Database = {
         }
         Update: {
           background_image?: string | null
+          city_id?: string | null
           foreground_image?: string | null
           id?: string
           logo_image?: string | null
           name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "zones_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

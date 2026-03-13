@@ -15,5 +15,14 @@
     "signInWithApple": "Zaloguj się przez Apple",
     "signInFailed": "Logowanie nie powiodło się",
     "disclaimer": "Logując się, akceptujesz nasz Regulamin i Politykę Prywatności."
+  },
+  "locationGate": {
+    "foregroundTitle": "Włącz lokalizację",
+    "foregroundMessage": "Potrzebujemy Twojej lokalizacji, aby pokazać Ci strefy Szpontu w pobliżu.",
+    "backgroundTitle": "Włącz lokalizację w tle",
+    "backgroundMessage": "Używamy lokalizacji w tle, żeby wykryć kiedy jesteś w strefie Szpontu.",
+    "grant": "Kontynuuj",
+    "openSettings": "Otwórz ustawienia",
+    "restricted": "Dostęp do lokalizacji jest ograniczony na tym urządzeniu."
   }
 }
