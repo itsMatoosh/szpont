@@ -21,7 +21,9 @@
     "disclaimer": "By signing in you agree to our Terms of Service and Privacy Policy."
   },
   "map": {
-    "backToCity": "Back to city view"
+    "backToCity": "Back to city view",
+    "presenceCount_one": "{{count}} person",
+    "presenceCount_other": "{{count}} people"
   },
   "onboarding": {
     "nameTitle": "What's your name?",

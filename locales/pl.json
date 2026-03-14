@@ -21,7 +21,10 @@
     "disclaimer": "Logując się, akceptujesz nasz Regulamin i Politykę Prywatności."
   },
   "map": {
-    "backToCity": "Wróć do widoku miasta"
+    "backToCity": "Wróć do widoku miasta",
+    "presenceCount_one": "{{count}} osoba",
+    "presenceCount_few": "{{count}} osoby",
+    "presenceCount_many": "{{count}} osób"
   },
   "onboarding": {
     "nameTitle": "Jak masz na imię?",

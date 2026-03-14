@@ -1,5 +1,7 @@
 import '../global.css';
 import '@/util/i18n/i18n.util';
+// Register background tasks at module scope (must happen before any component renders)
+import '@/util/geofencing/geofencing.util';
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -9,11 +11,14 @@ import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { useAuth } from '@/hooks/auth/use-auth.hook';
+import { useNearestCity } from '@/hooks/cities/use-nearest-city.hook';
+import { useGeofencing } from '@/hooks/geofencing/use-geofencing.hook';
 import { CurrentLocationProvider } from '@/hooks/location/current-location.context';
 import {
   LocationPermissionProvider,
   type LocationPermissionSnapshot,
   preloadLocationPermissions,
+  useLocationPermissionContext,
 } from '@/hooks/location/location-permission.context';
 import { ProfileProvider, useProfileContext } from '@/hooks/profile/profile.context';
 import { Colors } from '@/util/theme/theme.util';
@@ -60,7 +65,7 @@ export default function RootLayout() {
         <ProfileProvider user={user}>
           <LocationPermissionProvider initialSnapshot={locationPermissionSnapshot}>
             <CurrentLocationProvider>
-              <RootNavigator session={session} />
+              <RootNavigator session={session} userId={user?.id ?? null} />
             </CurrentLocationProvider>
           </LocationPermissionProvider>
         </ProfileProvider>
@@ -70,25 +75,41 @@ export default function RootLayout() {
 }
 
 /** Inner navigator that reads profile from context to decide which screens are accessible. */
-function RootNavigator({ session }: { session: unknown }) {
+function RootNavigator({ session, userId }: { session: unknown; userId: string | null }) {
   const { profile, isLoading: profileLoading } = useProfileContext();
 
   if (profileLoading) return null;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={!session}>
-        <Stack.Screen name="login" />
-      </Stack.Protected>
+    <>
+      {!!session && !!profile && <GeofencingInitializer />}
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Protected guard={!session}>
+          <Stack.Screen name="login" />
+        </Stack.Protected>
 
-      <Stack.Protected guard={!!session && !profile}>
-        <Stack.Screen name="onboarding" />
-      </Stack.Protected>
+        <Stack.Protected guard={!!session && !profile}>
+          <Stack.Screen name="onboarding" />
+        </Stack.Protected>
 
-      <Stack.Protected guard={!!session && !!profile}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="zone/[id]" />
-      </Stack.Protected>
-    </Stack>
+        <Stack.Protected guard={!!session && !!profile}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="zone/[id]" />
+        </Stack.Protected>
+      </Stack>
+    </>
   );
+}
+
+/**
+ * Headless component that starts background geofence monitoring once the
+ * user's city is resolved and background location is granted.
+ */
+function GeofencingInitializer() {
+  const { city } = useNearestCity();
+  const { backgroundStatus } = useLocationPermissionContext();
+
+  useGeofencing(backgroundStatus === 'granted' ? city?.id : undefined);
+
+  return null;
 }

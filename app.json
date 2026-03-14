@@ -52,7 +52,8 @@
         {
           "locationAlwaysAndWhenInUsePermission": "We use your location to detect when you're in a Szpont zone.",
           "locationWhenInUsePermission": "We use your location to show you nearby Szpont zones.",
-          "isAndroidBackgroundLocationEnabled": true
+          "isAndroidBackgroundLocationEnabled": true,
+          "isIosBackgroundLocationEnabled": true
         }
       ],
       [

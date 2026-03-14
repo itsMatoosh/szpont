@@ -8,6 +8,7 @@ import { ZoneInfoCard } from '@/components/zone-info-card/zone-info-card.compone
 import { ZoneMarker } from '@/components/zone-marker/zone-marker.component';
 import { useNearestCity } from '@/hooks/cities/use-nearest-city.hook';
 import { useCurrentLocation } from '@/hooks/location/current-location.context';
+import { useZonesPresenceCounts } from '@/hooks/presence/use-zones-presence-counts.hook';
 import { useTabBarVisibility } from '@/hooks/tab-bar/tab-bar-visibility.context';
 import { useZonesByCity } from '@/hooks/zones/use-zones-by-city.hook';
 import Mapbox from '@/util/mapbox/mapbox.util';
@@ -45,6 +46,8 @@ export function MapView() {
   const { location } = useCurrentLocation();
   const { city } = useNearestCity();
   const { zones } = useZonesByCity(city?.id);
+  const zoneIds = useMemo(() => zones.map((z) => z.id), [zones]);
+  const presenceCounts = useZonesPresenceCounts(zoneIds);
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
@@ -380,6 +383,7 @@ export function MapView() {
           <ZoneMarker
             key={marker.id}
             marker={marker}
+            presenceCount={presenceCounts[marker.id] ?? 0}
             animatedStyle={markerAnimatedStyle}
             onPress={() => setViewState({ mode: 'zone', zoneId: marker.id })}
           />

@@ -64,6 +64,45 @@ export type Database = {
           },
         ]
       }
+      presence: {
+        Row: {
+          entered_at: string
+          expires_at: string
+          id: string
+          user_id: string
+          zone_id: string
+        }
+        Insert: {
+          entered_at?: string
+          expires_at?: string
+          id?: string
+          user_id: string
+          zone_id: string
+        }
+        Update: {
+          entered_at?: string
+          expires_at?: string
+          id?: string
+          user_id?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presence_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presence_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spatial_ref_sys: {
         Row: {
           auth_name: string | null
@@ -353,6 +392,9 @@ export type Database = {
         | { Args: { table_name: string }; Returns: string }
       enablelongtransactions: { Args: never; Returns: string }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
+      enter_zone: { Args: { p_zone_id: string }; Returns: undefined }
+      exit_zone: { Args: Record<PropertyKey, never>; Returns: undefined }
+      expire_stale_presence: { Args: Record<PropertyKey, never>; Returns: undefined }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
         Args: { geom1: unknown; geom2: unknown }
