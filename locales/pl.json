@@ -19,6 +19,18 @@
   "map": {
     "backToCity": "Wróć do widoku miasta"
   },
+  "onboarding": {
+    "nameTitle": "Jak masz na imię?",
+    "namePlaceholder": "Twoje imię",
+    "usernameTitle": "Wybierz nazwę użytkownika",
+    "usernamePlaceholder": "nazwa_użytkownika",
+    "dobTitle": "Podaj swoją datę urodzenia",
+    "dobDay": "DD",
+    "dobMonth": "MM",
+    "dobYear": "RRRR",
+    "continue": "Kontynuuj",
+    "back": "Wróć"
+  },
   "locationGate": {
     "foregroundTitle": "Włącz lokalizację",
     "foregroundMessage": "Potrzebujemy Twojej lokalizacji, aby pokazać Ci strefy Szpontu w pobliżu.",

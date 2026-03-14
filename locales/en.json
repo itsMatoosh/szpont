@@ -19,6 +19,18 @@
   "map": {
     "backToCity": "Back to city view"
   },
+  "onboarding": {
+    "nameTitle": "What's your name?",
+    "namePlaceholder": "Your name",
+    "usernameTitle": "Pick a username",
+    "usernamePlaceholder": "username",
+    "dobTitle": "Enter your date of birth",
+    "dobDay": "DD",
+    "dobMonth": "MM",
+    "dobYear": "YYYY",
+    "continue": "Continue",
+    "back": "Back"
+  },
   "locationGate": {
     "foregroundTitle": "Enable Location",
     "foregroundMessage": "We need your location to show you nearby Szpont zones.",

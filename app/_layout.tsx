@@ -15,6 +15,7 @@ import {
   type LocationPermissionSnapshot,
   preloadLocationPermissions,
 } from '@/hooks/location/location-permission.context';
+import { ProfileProvider, useProfileContext } from '@/hooks/profile/profile.context';
 import { Colors } from '@/util/theme/theme.util';
 
 const queryClient = new QueryClient();
@@ -29,10 +30,10 @@ const darkTheme = {
   colors: { ...DarkTheme.colors, background: Colors.dark.background },
 };
 
-/** Root layout: provides theme, query client, and blocks rendering while auth is resolving. */
+/** Root layout: provides theme, query client, profile context, and blocks rendering while resolving. */
 export default function RootLayout() {
   const scheme = useColorScheme();
-  const { session, isLoading } = useAuth();
+  const { session, user, isLoading } = useAuth();
 
   // Preload location permissions so the provider starts with real values
   const [locationPermissionSnapshot, setLocationPermissionSnapshot] = useState<LocationPermissionSnapshot | null>(null);
@@ -56,21 +57,38 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={scheme === 'dark' ? darkTheme : lightTheme}>
       <QueryClientProvider client={queryClient}>
-        <LocationPermissionProvider initialSnapshot={locationPermissionSnapshot}>
-          <CurrentLocationProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Protected guard={!session}>
-                <Stack.Screen name="login" />
-              </Stack.Protected>
-
-              <Stack.Protected guard={!!session}>
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen name="zone/[id]" />
-              </Stack.Protected>
-            </Stack>
-          </CurrentLocationProvider>
-        </LocationPermissionProvider>
+        <ProfileProvider user={user}>
+          <LocationPermissionProvider initialSnapshot={locationPermissionSnapshot}>
+            <CurrentLocationProvider>
+              <RootNavigator session={session} />
+            </CurrentLocationProvider>
+          </LocationPermissionProvider>
+        </ProfileProvider>
       </QueryClientProvider>
     </ThemeProvider>
+  );
+}
+
+/** Inner navigator that reads profile from context to decide which screens are accessible. */
+function RootNavigator({ session }: { session: unknown }) {
+  const { profile, isLoading: profileLoading } = useProfileContext();
+
+  if (profileLoading) return null;
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={!session}>
+        <Stack.Screen name="login" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!!session && !profile}>
+        <Stack.Screen name="onboarding" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!!session && !!profile}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="zone/[id]" />
+      </Stack.Protected>
+    </Stack>
   );
 }
