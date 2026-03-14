@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,11 +12,14 @@ import { useTabBarVisibility } from '@/hooks/tab-bar/tab-bar-visibility.context'
 import { useZonesByCity } from '@/hooks/zones/use-zones-by-city.hook';
 import Mapbox from '@/util/mapbox/mapbox.util';
 
-import { getBoundingBox, getZoomForBoundingBox, resolveOverlaps } from './map-view.util';
+import { getBoundingBox, getZoomForBoundingBox, resolveOverlaps, type ResolvedMarker, type DebugOverlayData } from './map-view.util';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type ViewState = { mode: 'city' } | { mode: 'zone'; zoneId: string };
+
+/** Set to `true` to render bounding-box and viewport debug overlay on the map. */
+const SHOW_DEBUG_OVERLAY = false;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -43,6 +46,7 @@ export function MapView() {
   const { city } = useNearestCity();
   const { zones } = useZonesByCity(city?.id);
   const insets = useSafeAreaInsets();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
   const { setHidden: setTabBarHidden } = useTabBarVisibility();
 
@@ -206,17 +210,28 @@ export function MapView() {
 
   // ── Zone markers (city view) ─────────────────────────────────────────────
 
-  /** Zone centers with 2D collision avoidance applied. */
-  const zoneMarkers = useMemo(() => {
+  /** Zone markers placed at each zone's bounding-box center, then collision-resolved. */
+  const { zoneMarkers, debugOverlay } = useMemo<{
+    zoneMarkers: ResolvedMarker[];
+    debugOverlay: DebugOverlayData | null;
+  }>(() => {
+    if (!cityCamera) return { zoneMarkers: [], debugOverlay: null };
+
     const raw = zones.map((z) => {
       const bbox = getBoundingBox(z.boundary as unknown as GeoJSON.Geometry);
       const center: [number, number] = bbox
         ? [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]
         : [0, 0];
-      return { id: z.id, name: z.name, iconUrl: z.icon_url, center };
+      return { id: z.id, name: z.name, subText: '23 osoby', iconUrl: z.icon_url, center };
     });
-    return resolveOverlaps(raw, cityCamera?.zoom ?? 12);
-  }, [zones, cityCamera?.zoom]);
+    const result = resolveOverlaps(raw, cityCamera.zoom, cityCamera.center, screenWidth, screenHeight, {
+      top: insets.top,
+      right: insets.right,
+      bottom: insets.bottom,
+      left: insets.left,
+    });
+    return { zoneMarkers: result.markers, debugOverlay: result.debug };
+  }, [zones, cityCamera, screenWidth, screenHeight, insets]);
 
   // ── Active zone GeoJSON (zone view) ─────────────────────────────────────
 
@@ -256,8 +271,9 @@ export function MapView() {
   const markerOpacity = useSharedValue(1);
 
   useEffect(() => {
-    markerOpacity.value = withTiming(viewState.mode === 'city' ? 1 : 0, {
-      duration: FLYTO_DURATION_MS,
+    const fadingIn = viewState.mode === 'city';
+    markerOpacity.value = withTiming(fadingIn ? 1 : 0, {
+      duration: fadingIn ? FLYTO_DURATION_MS : 200,
     });
   }, [viewState.mode]);
 
@@ -383,6 +399,43 @@ export function MapView() {
         bottomInset={insets.bottom}
         onClose={handleBack}
       />
+
+      {/* Debug overlay: shows the simulation's viewport boundary and marker bounding boxes */}
+      {SHOW_DEBUG_OVERLAY && debugOverlay && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {/* Viewport boundary */}
+          <View
+            style={{
+              position: 'absolute',
+              left: debugOverlay.viewport.left,
+              top: debugOverlay.viewport.top,
+              width: debugOverlay.viewport.width,
+              height: debugOverlay.viewport.height,
+              borderWidth: 2,
+              borderColor: 'lime',
+              borderStyle: 'dashed',
+            }}
+          />
+          {/* Marker bounding boxes */}
+          {debugOverlay.rects.map((rect: DebugOverlayData['rects'][number]) => (
+            <View
+              key={rect.name}
+              style={{
+                position: 'absolute',
+                left: rect.left,
+                top: rect.top,
+                width: rect.width,
+                height: rect.height,
+                borderWidth: 1,
+                borderColor: 'red',
+                backgroundColor: 'rgba(255, 0, 0, 0.15)',
+              }}
+            >
+              <Text style={{ color: 'red', fontSize: 8 }}>{rect.name}</Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }

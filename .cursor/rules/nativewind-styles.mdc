@@ -1,0 +1,31 @@
+---
+description: Prefer NativeWind className over manual StyleSheet in components
+globs: "**/*.tsx"
+alwaysApply: false
+---
+
+# NativeWind Styles
+
+Always use NativeWind `className` for styling React Native components. Avoid `StyleSheet.create` and inline `style` objects.
+
+## Rules
+
+- Use `className` with Tailwind utilities for layout, spacing, colors, typography, and borders
+- Never reach for `StyleSheet.create` unless the style genuinely cannot be expressed in Tailwind (e.g. complex transforms, animated styles from Reanimated)
+- Reanimated `Animated.View` / `Animated.Text` may use `style` for animated values — that is expected
+- Dynamic dimension values that depend on runtime calculations (e.g. `Dimensions.get`) may use `style` — prefer `className` for everything else in the same element
+
+## Examples
+
+```tsx
+// ✅ Good — NativeWind className
+<View className="flex-row items-center gap-2 rounded-xl px-3 py-2 bg-accent">
+  <Text className="text-sm font-bold text-on-accent">Hello</Text>
+</View>
+
+// ❌ Bad — manual StyleSheet
+const styles = StyleSheet.create({
+  container: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+});
+<View style={styles.container}>…</View>
+```
