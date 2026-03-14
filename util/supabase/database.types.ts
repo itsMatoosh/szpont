@@ -93,18 +93,21 @@ export type Database = {
         Row: {
           boundary: Json
           city_id: string
+          icon_url: string | null
           id: string
           name: string
         }
         Insert: {
           boundary: Json
           city_id: string
+          icon_url?: string | null
           id?: string
           name: string
         }
         Update: {
           boundary?: Json
           city_id?: string
+          icon_url?: string | null
           id?: string
           name?: string
         }
@@ -142,6 +145,7 @@ export type Database = {
         Returns: {
           boundary: Json
           city_id: string
+          icon_url: string | null
           id: string
           name: string
         }[]

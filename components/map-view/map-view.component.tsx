@@ -1,19 +1,18 @@
-import RNBounceable from '@freakycoder/react-native-bounceable';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CityLabel } from '@/components/city-label/city-label.component';
+import { ZoneInfoCard } from '@/components/zone-info-card/zone-info-card.component';
+import { ZoneMarker } from '@/components/zone-marker/zone-marker.component';
 import { useNearestCity } from '@/hooks/cities/use-nearest-city.hook';
 import { useCurrentLocation } from '@/hooks/location/current-location.context';
+import { useTabBarVisibility } from '@/hooks/tab-bar/tab-bar-visibility.context';
 import { useZonesByCity } from '@/hooks/zones/use-zones-by-city.hook';
 import Mapbox from '@/util/mapbox/mapbox.util';
 
-import {
-  getBoundingBox,
-  getZoomForBoundingBox,
-  resolveOverlaps,
-  type TailDirection,
-} from './map-view.util';
+import { getBoundingBox, getZoomForBoundingBox, resolveOverlaps } from './map-view.util';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -33,6 +32,8 @@ const FLYTO_DURATION_MS = 1000;
 const FLYTO_HEADING = (ORBIT_STEP_DEG / ORBIT_INTERVAL_MS) * FLYTO_DURATION_MS;
 /** Minimum zoom when viewing a zone — Mapbox tiles lack smaller buildings below ~15. */
 const MIN_ZONE_ZOOM = 15;
+/** Estimated height (px) of the zone info card content, used as camera bottom padding. */
+const ZONE_CARD_HEIGHT_PX = 80;
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -43,15 +44,40 @@ export function MapView() {
   const { zones } = useZonesByCity(city?.id);
   const insets = useSafeAreaInsets();
 
+  const { setHidden: setTabBarHidden } = useTabBarVisibility();
+
   const [viewState, setViewState] = useState<ViewState>({ mode: 'city' });
+  const [displayState, setDisplayState] = useState<ViewState>({ mode: 'city' });
   const cameraRef = useRef<Mapbox.Camera>(null);
   const headingRef = useRef(0);
+
+  // Sync displayState to viewState with a delay on zone→city so UI elements
+  // stay visible while the fly-out animation plays.
+  useEffect(() => {
+    if (viewState.mode === 'zone') {
+      setDisplayState(viewState);
+    } else {
+      const id = setTimeout(() => setDisplayState(viewState), FLYTO_DURATION_MS);
+      return () => clearTimeout(id);
+    }
+  }, [viewState]);
+
+  // Hide the native tab bar while a zone is displayed
+  useEffect(() => {
+    setTabBarHidden(displayState.mode === 'zone');
+  }, [displayState.mode, setTabBarHidden]);
 
   // ── Derived camera values ────────────────────────────────────────────────
 
   const activeZone =
     viewState.mode === 'zone'
       ? zones.find((z) => z.id === viewState.zoneId)
+      : undefined;
+
+  /** Zone resolved from displayState — keeps card content stable during fly-out. */
+  const displayZone =
+    displayState.mode === 'zone'
+      ? zones.find((z) => z.id === displayState.zoneId)
       : undefined;
 
   /** Camera framing derived from the union bounding box of all zones. */
@@ -124,6 +150,17 @@ export function MapView() {
   // ── Zone fly-to + orbit effect ──────────────────────────────────────────────
   // Imperative-only so the declarative Camera props can't reset heading mid-orbit.
 
+  // Bottom padding pushes the focal point up so it isn't hidden behind the info card.
+  const zoneCameraPadding = useMemo(
+    () => ({
+      paddingTop: 0,
+      paddingLeft: 0,
+      paddingRight: 0,
+      paddingBottom: insets.bottom + ZONE_CARD_HEIGHT_PX,
+    }),
+    [insets.bottom],
+  );
+
   useEffect(() => {
     if (!zoneCamera) {
       headingRef.current = 0;
@@ -138,6 +175,7 @@ export function MapView() {
       heading: FLYTO_HEADING,
       animationDuration: FLYTO_DURATION_MS,
       animationMode: 'flyTo',
+      padding: zoneCameraPadding,
     });
 
     // Seed so the interval continues seamlessly from where the flyTo lands.
@@ -155,6 +193,7 @@ export function MapView() {
           heading: headingRef.current,
           animationDuration: 0,
           animationMode: 'moveTo',
+          padding: zoneCameraPadding,
         });
       }, ORBIT_INTERVAL_MS);
     }, FLYTO_DURATION_MS);
@@ -163,7 +202,7 @@ export function MapView() {
       clearTimeout(timeout);
       if (intervalId) clearInterval(intervalId);
     };
-  }, [zoneCamera]);
+  }, [zoneCamera, zoneCameraPadding]);
 
   // ── Zone markers (city view) ─────────────────────────────────────────────
 
@@ -174,7 +213,7 @@ export function MapView() {
       const center: [number, number] = bbox
         ? [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]
         : [0, 0];
-      return { id: z.id, name: z.name, center };
+      return { id: z.id, name: z.name, iconUrl: z.icon_url, center };
     });
     return resolveOverlaps(raw, cityCamera?.zoom ?? 12);
   }, [zones, cityCamera?.zoom]);
@@ -195,6 +234,39 @@ export function MapView() {
       ],
     };
   }, [activeZone]);
+
+  /** Keeps the zone ShapeSource mounted during the fly-out so zoom interpolation can fade it. */
+  const [displayedZoneFeature, setDisplayedZoneFeature] =
+    useState<GeoJSON.FeatureCollection>();
+
+  useEffect(() => {
+    if (activeZoneFeature) {
+      setDisplayedZoneFeature(activeZoneFeature);
+      return;
+    }
+    const id = setTimeout(
+      () => setDisplayedZoneFeature(undefined),
+      FLYTO_DURATION_MS,
+    );
+    return () => clearTimeout(id);
+  }, [activeZoneFeature]);
+
+  // ── Marker fade animation ────────────────────────────────────────────────
+
+  const markerOpacity = useSharedValue(1);
+
+  useEffect(() => {
+    markerOpacity.value = withTiming(viewState.mode === 'city' ? 1 : 0, {
+      duration: FLYTO_DURATION_MS,
+    });
+  }, [viewState.mode]);
+
+  /** Animated style applied to each marker wrapper so they fade in/out with the flyTo. */
+  const markerAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: markerOpacity.value,
+    // Prevent phantom taps on invisible markers
+    pointerEvents: markerOpacity.value === 0 ? 'none' : 'auto',
+  }));
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -224,6 +296,10 @@ export function MapView() {
         rotateEnabled={false}
         zoomEnabled={false}
         scrollEnabled={false}
+        logoEnabled={false}
+        attributionEnabled={false}
+        compassEnabled={false}
+        scaleBarEnabled={false}
       >
         <Mapbox.Camera
           ref={cameraRef}
@@ -235,14 +311,18 @@ export function MapView() {
         <Mapbox.LocationPuck puckBearingEnabled puckBearing="heading" />
 
         {/* Selected zone boundary — only visible in zone view, below buildings */}
-        {activeZoneFeature && (
-          <Mapbox.ShapeSource id="zone-boundaries" shape={activeZoneFeature}>
+        {displayedZoneFeature && (
+          <Mapbox.ShapeSource id="zone-boundaries" shape={displayedZoneFeature}>
             <Mapbox.FillLayer
               id="zone-fill"
               belowLayerID="3d-buildings"
               style={{
                 fillColor: '#CCFF00',
-                fillOpacity: 0.15,
+                fillOpacity: [
+                  'interpolate', ['linear'], ['zoom'],
+                  13, 0,
+                  15, 0.15,
+                ],
               }}
             />
             <Mapbox.LineLayer
@@ -251,7 +331,11 @@ export function MapView() {
               style={{
                 lineColor: '#CCFF00',
                 lineWidth: 2,
-                lineOpacity: 0.8,
+                lineOpacity: [
+                  'interpolate', ['linear'], ['zoom'],
+                  13, 0,
+                  15, 0.8,
+                ],
               }}
             />
           </Mapbox.ShapeSource>
@@ -261,182 +345,51 @@ export function MapView() {
         <Mapbox.FillExtrusionLayer
           id="3d-buildings"
           sourceLayerID="building"
-          minZoomLevel={13}
+          minZoomLevel={0}
           maxZoomLevel={24}
           style={{
             fillExtrusionColor: '#aaa',
             fillExtrusionHeight: ['get', 'height'],
             fillExtrusionBase: ['get', 'min_height'],
-            fillExtrusionOpacity: 0.9,
+            fillExtrusionOpacity: [
+              'interpolate', ['linear'], ['zoom'],
+              13, 0,
+              14.5, 0.9,
+            ],
           }}
         />
 
-        {/* Zone markers — visible only in city view */}
-        {viewState.mode === 'city' &&
-          zoneMarkers.map((marker) => (
-            <Mapbox.MarkerView
-              key={marker.id}
-              coordinate={marker.originalCenter}
-              allowOverlap
-              anchor={TAIL_ANCHOR[marker.tailDirection]}
-            >
-              <RNBounceable
-                onPress={() => setViewState({ mode: 'zone', zoneId: marker.id })}
-              >
-                <View style={styles.markerWrapper}>
-                  {marker.tailDirection === 'top' && (
-                    <View style={styles.tailTop} />
-                  )}
-                  {marker.tailDirection === 'left' ? (
-                    <View style={styles.tailRowLeft}>
-                      <View style={styles.tailLeft} />
-                      <MarkerBubble marker={marker} />
-                    </View>
-                  ) : marker.tailDirection === 'right' ? (
-                    <View style={styles.tailRowRight}>
-                      <MarkerBubble marker={marker} />
-                      <View style={styles.tailRight} />
-                    </View>
-                  ) : (
-                    <MarkerBubble marker={marker} />
-                  )}
-                  {marker.tailDirection === 'bottom' && (
-                    <View style={styles.tailBottom} />
-                  )}
-                </View>
-              </RNBounceable>
-            </Mapbox.MarkerView>
-          ))}
+        {/* Zone markers — always rendered, opacity animated during transitions */}
+        {zoneMarkers.map((marker) => (
+          <ZoneMarker
+            key={marker.id}
+            marker={marker}
+            animatedStyle={markerAnimatedStyle}
+            onPress={() => setViewState({ mode: 'zone', zoneId: marker.id })}
+          />
+        ))}
       </Mapbox.MapView>
 
-      {/* Back button — visible only in zone view */}
-      {viewState.mode === 'zone' && (
-        <View style={[styles.backButton, { top: insets.top + 12 }]}>
-          <RNBounceable onPress={handleBack}>
-            <View style={styles.backButtonInner}>
-              <Text style={styles.backChevron}>‹</Text>
-            </View>
-          </RNBounceable>
-        </View>
+      {city && (
+        <CityLabel
+          name={city.name}
+          zoneName={activeZone?.name}
+          topInset={insets.top}
+        />
       )}
+
+      <ZoneInfoCard
+        visible={viewState.mode === 'zone'}
+        bottomInset={insets.bottom}
+        onClose={handleBack}
+      />
     </View>
   );
 }
-
-// ── Anchor map ────────────────────────────────────────────────────────────────
-// Anchor shifts the coordinate point relative to the marker's bounding box so
-// the tail tip lands on the actual coordinate.
-
-const TAIL_ANCHOR: Record<TailDirection, { x: number; y: number }> = {
-  none: { x: 0.5, y: 0.5 },
-  top: { x: 0.5, y: 0 },
-  bottom: { x: 0.5, y: 1 },
-  left: { x: 0, y: 0.5 },
-  right: { x: 1, y: 0.5 },
-};
-
-// ── Marker bubble ─────────────────────────────────────────────────────────────
-
-/** Inner bubble content shared between all tail orientations. */
-function MarkerBubble({ marker }: { marker: { name: string } }) {
-  return (
-    <View style={styles.marker}>
-      <Text style={styles.markerLabel}>{marker.name}</Text>
-    </View>
-  );
-}
-
-// ── Tail triangle size ────────────────────────────────────────────────────────
-
-const TAIL_SIZE = 6;
 
 // ── Styles ─────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  backButton: {
-    position: 'absolute',
-    left: 16,
-    zIndex: 10,
-  },
-  backButtonInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backChevron: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    lineHeight: 32,
-    marginLeft: -2,
-  },
-  markerWrapper: {
-    alignItems: 'center',
-  },
-  marker: {
-    alignItems: 'center',
-    backgroundColor: '#CCFF00',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingTop: 4,
-    paddingBottom: 6,
-  },
-  markerLabel: {
-    color: '#000000',
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-  tailTop: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: TAIL_SIZE,
-    borderRightWidth: TAIL_SIZE,
-    borderBottomWidth: TAIL_SIZE,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: '#CCFF00',
-  },
-  tailBottom: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: TAIL_SIZE,
-    borderRightWidth: TAIL_SIZE,
-    borderTopWidth: TAIL_SIZE,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderTopColor: '#CCFF00',
-  },
-  tailRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tailLeft: {
-    width: 0,
-    height: 0,
-    borderTopWidth: TAIL_SIZE,
-    borderBottomWidth: TAIL_SIZE,
-    borderRightWidth: TAIL_SIZE,
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderRightColor: '#CCFF00',
-  },
-  tailRowRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  tailRight: {
-    width: 0,
-    height: 0,
-    borderTopWidth: TAIL_SIZE,
-    borderBottomWidth: TAIL_SIZE,
-    borderLeftWidth: TAIL_SIZE,
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    borderLeftColor: '#CCFF00',
-  },
 });

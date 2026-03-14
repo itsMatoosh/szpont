@@ -4,7 +4,7 @@ import { supabase } from '@/util/supabase/supabase.util';
 export type Zone = Database['public']['Tables']['zones']['Row'];
 
 /** All columns we select for zone queries. */
-const ZONE_COLUMNS = 'id, name, city_id, boundary' as const;
+const ZONE_COLUMNS = 'id, name, city_id, boundary, icon_url' as const;
 
 /** Fetches all zones. */
 export async function getZones(): Promise<Zone[]> {

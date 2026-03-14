@@ -53,6 +53,8 @@ export type TailDirection = 'none' | 'top' | 'bottom' | 'left' | 'right';
 export interface ResolvedMarker {
   id: string;
   name: string;
+  /** Public URL of the zone's monochrome icon, if set. */
+  iconUrl: string | null;
   /** Adjusted coordinate used for collision bookkeeping (may be shifted). */
   center: [number, number];
   /** Original zone center — use as the MarkerView coordinate so the tail tip lands here. */
@@ -95,7 +97,7 @@ function overlaps(
  * which side of the bubble the pointer should be drawn on.
  */
 export function resolveOverlaps(
-  markers: { id: string; name: string; center: [number, number] }[],
+  markers: { id: string; name: string; iconUrl: string | null; center: [number, number] }[],
   zoom: number,
 ): ResolvedMarker[] {
   const threshLng = pxToLng(MARKER_WIDTH_PX, zoom);
