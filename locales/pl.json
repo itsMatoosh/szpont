@@ -1,6 +1,6 @@
 {
   "tabs": {
-    "home": "Strona główna",
+    "map": "Mapa",
     "profile": "Profil"
   },
   "home": {
@@ -15,6 +15,9 @@
     "signInWithApple": "Zaloguj się przez Apple",
     "signInFailed": "Logowanie nie powiodło się",
     "disclaimer": "Logując się, akceptujesz nasz Regulamin i Politykę Prywatności."
+  },
+  "map": {
+    "backToCity": "Wróć do widoku miasta"
   },
   "locationGate": {
     "foregroundTitle": "Włącz lokalizację",

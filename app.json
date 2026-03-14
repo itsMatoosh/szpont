@@ -54,6 +54,12 @@
           "locationWhenInUsePermission": "We use your location to show you nearby Szpont zones.",
           "isAndroidBackgroundLocationEnabled": true
         }
+      ],
+      [
+        "@rnmapbox/maps",
+        {
+          "RNMapboxMapsVersion": "11.18.2"
+        }
       ]
     ],
     "experiments": {

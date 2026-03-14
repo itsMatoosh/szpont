@@ -43,23 +43,17 @@ export type Database = {
         Row: {
           id: string
           name: string
-          latitude: number
-          longitude: number
-          radius: number
+          search_boundary: Json
         }
         Insert: {
           id?: string
           name: string
-          latitude: number
-          longitude: number
-          radius: number
+          search_boundary: Json
         }
         Update: {
           id?: string
           name?: string
-          latitude?: number
-          longitude?: number
-          radius?: number
+          search_boundary?: Json
         }
         Relationships: []
       }
@@ -97,27 +91,21 @@ export type Database = {
       }
       zones: {
         Row: {
-          background_image: string | null
-          city_id: string | null
-          foreground_image: string | null
+          boundary: Json
+          city_id: string
           id: string
-          logo_image: string | null
           name: string
         }
         Insert: {
-          background_image?: string | null
-          city_id?: string | null
-          foreground_image?: string | null
+          boundary: Json
+          city_id: string
           id?: string
-          logo_image?: string | null
           name: string
         }
         Update: {
-          background_image?: string | null
-          city_id?: string | null
-          foreground_image?: string | null
+          boundary?: Json
+          city_id?: string
           id?: string
-          logo_image?: string | null
           name?: string
         }
         Relationships: [
@@ -135,7 +123,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_city_at_point: {
+        Args: {
+          lng: number
+          lat: number
+        }
+        Returns: {
+          id: string
+          name: string
+          search_boundary: Json
+        }[]
+      }
+      get_zone_at_point: {
+        Args: {
+          lng: number
+          lat: number
+        }
+        Returns: {
+          boundary: Json
+          city_id: string
+          id: string
+          name: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

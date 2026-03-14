@@ -1,6 +1,6 @@
 {
   "tabs": {
-    "home": "Home",
+    "map": "Map",
     "profile": "Profile"
   },
   "home": {
@@ -15,6 +15,9 @@
     "signInWithApple": "Sign in with Apple",
     "signInFailed": "Sign-in failed",
     "disclaimer": "By signing in you agree to our Terms of Service and Privacy Policy."
+  },
+  "map": {
+    "backToCity": "Back to city view"
   },
   "locationGate": {
     "foregroundTitle": "Enable Location",
