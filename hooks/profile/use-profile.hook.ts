@@ -20,6 +20,15 @@ export function useProfile(user: User | null): ProfileState {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Reset loading synchronously when the user identity changes so there is
+  // no render frame where isLoading is false with a stale profile.
+  const [prevUserId, setPrevUserId] = useState(user?.id ?? null);
+  const userId = user?.id ?? null;
+  if (userId !== prevUserId) {
+    setPrevUserId(userId);
+    setIsLoading(true);
+  }
+
   const fetch = useCallback(async () => {
     if (!user) {
       setProfile(null);

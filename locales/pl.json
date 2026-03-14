@@ -7,7 +7,11 @@
     "title": "Strona główna"
   },
   "profile": {
-    "title": "Profil"
+    "title": "Profil",
+    "editProfile": "Edytuj profil",
+    "memberSince": "Dołączył(a) {{date}}",
+    "signOut": "Wyloguj się",
+    "friends": "Znajomi"
   },
   "auth": {
     "subtitle": "widzimy się na mieście ;)",
