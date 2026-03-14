@@ -27,6 +27,7 @@ export function ZoneMarker({ marker, presenceCount, animatedStyle, onPress }: Zo
     <Mapbox.MarkerView
       coordinate={marker.center}
       allowOverlap
+      allowOverlapWithPuck
       anchor={{ x: 0.5, y: 0.5 }}
     >
       <Animated.View style={animatedStyle}>

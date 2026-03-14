@@ -7,7 +7,6 @@ import { CityLabel } from '@/components/city-label/city-label.component';
 import { ZoneInfoCard } from '@/components/zone-info-card/zone-info-card.component';
 import { ZoneMarker } from '@/components/zone-marker/zone-marker.component';
 import { useNearestCity } from '@/hooks/cities/use-nearest-city.hook';
-import { useCurrentLocation } from '@/hooks/location/current-location.context';
 import { useZonesPresenceCounts } from '@/hooks/presence/use-zones-presence-counts.hook';
 import { useTabBarVisibility } from '@/hooks/tab-bar/tab-bar-visibility.context';
 import { useZonesByCity } from '@/hooks/zones/use-zones-by-city.hook';
@@ -17,7 +16,10 @@ import { getBoundingBox, getZoomForBoundingBox, resolveOverlaps, type ResolvedMa
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
-type ViewState = { mode: 'city' } | { mode: 'zone'; zoneId: string };
+type CameraMode =
+  | { mode: 'follow-user' }
+  | { mode: 'city' }
+  | { mode: 'zone'; zoneId: string };
 
 /** Set to `true` to render bounding-box and viewport debug overlay on the map. */
 const SHOW_DEBUG_OVERLAY = false;
@@ -43,7 +45,6 @@ const ZONE_CARD_HEIGHT_PX = 80;
 
 /** Full-screen Mapbox map showing zone polygons with locked panning. */
 export function MapView() {
-  const { location } = useCurrentLocation();
   const { city } = useNearestCity();
   const { zones } = useZonesByCity(city?.id);
   const zoneIds = useMemo(() => zones.map((z) => z.id), [zones]);
@@ -53,38 +54,52 @@ export function MapView() {
 
   const { setHidden: setTabBarHidden } = useTabBarVisibility();
 
-  const [viewState, setViewState] = useState<ViewState>({ mode: 'city' });
-  const [displayState, setDisplayState] = useState<ViewState>({ mode: 'city' });
+  const [cameraMode, setCameraMode] = useState<CameraMode>({ mode: 'follow-user' });
+  const [displayMode, setDisplayMode] = useState<CameraMode>({ mode: 'follow-user' });
   const cameraRef = useRef<Mapbox.Camera>(null);
   const headingRef = useRef(0);
 
-  // Sync displayState to viewState with a delay on zone→city so UI elements
-  // stay visible while the fly-out animation plays.
+  // Sync displayMode to cameraMode with a delay on zone→non-zone so UI
+  // elements stay visible while the fly-out animation plays.
   useEffect(() => {
-    if (viewState.mode === 'zone') {
-      setDisplayState(viewState);
+    if (cameraMode.mode === 'zone') {
+      setDisplayMode(cameraMode);
     } else {
-      const id = setTimeout(() => setDisplayState(viewState), FLYTO_DURATION_MS);
+      const id = setTimeout(() => setDisplayMode(cameraMode), FLYTO_DURATION_MS);
       return () => clearTimeout(id);
     }
-  }, [viewState]);
+  }, [cameraMode]);
 
   // Hide the native tab bar while a zone is displayed
   useEffect(() => {
-    setTabBarHidden(displayState.mode === 'zone');
-  }, [displayState.mode, setTabBarHidden]);
+    setTabBarHidden(displayMode.mode === 'zone');
+  }, [displayMode.mode, setTabBarHidden]);
+
+  // ── City-change effect ───────────────────────────────────────────────────
+  // When the resolved city changes, reset to city overview or follow-user.
+  // This also clears a selected zone if the user walks out of the city.
+
+  const prevCityIdRef = useRef(city?.id);
+
+  useEffect(() => {
+    const prev = prevCityIdRef.current;
+    prevCityIdRef.current = city?.id;
+    if (city?.id === prev) return;
+
+    setCameraMode(city ? { mode: 'city' } : { mode: 'follow-user' });
+  }, [city]);
 
   // ── Derived camera values ────────────────────────────────────────────────
 
   const activeZone =
-    viewState.mode === 'zone'
-      ? zones.find((z) => z.id === viewState.zoneId)
+    cameraMode.mode === 'zone'
+      ? zones.find((z) => z.id === cameraMode.zoneId)
       : undefined;
 
-  /** Zone resolved from displayState — keeps card content stable during fly-out. */
+  /** Zone resolved from displayMode — keeps card content stable during fly-out. */
   const displayZone =
-    displayState.mode === 'zone'
-      ? zones.find((z) => z.id === displayState.zoneId)
+    displayMode.mode === 'zone'
+      ? zones.find((z) => z.id === displayMode.zoneId)
       : undefined;
 
   /** Camera framing derived from the union bounding box of all zones. */
@@ -125,37 +140,10 @@ export function MapView() {
     };
   }, [activeZone]);
 
-  /**
-   * Declarative camera props — city / fallback only.
-   * Returns an empty object for zone mode so the native Camera `stop` becomes
-   * null and can't override the imperative setCamera calls from the orbit effect.
-   */
-  const cameraProps = useMemo(() => {
-    if (zoneCamera) return {};
-
-    if (cityCamera) {
-      return {
-        centerCoordinate: cityCamera.center,
-        zoomLevel: cityCamera.zoom,
-        pitch: 0,
-        heading: 0,
-      };
-    }
-
-    if (location) {
-      return {
-        centerCoordinate: [location.coords.longitude, location.coords.latitude] as [number, number],
-        zoomLevel: 12,
-        pitch: 0,
-        heading: 0,
-      };
-    }
-
-    return {};
-  }, [zoneCamera, cityCamera, location]);
-
-  // ── Zone fly-to + orbit effect ──────────────────────────────────────────────
-  // Imperative-only so the declarative Camera props can't reset heading mid-orbit.
+  // ── Camera effect ────────────────────────────────────────────────────────
+  // Single effect that reads cameraMode and applies the right camera
+  // behaviour: follow-user is handled by the Camera prop; city and zone
+  // use imperative setCamera calls.
 
   // Bottom padding pushes the focal point up so it isn't hidden behind the info card.
   const zoneCameraPadding = useMemo(
@@ -168,11 +156,29 @@ export function MapView() {
     [insets.bottom],
   );
 
+  // City overview and zone orbit camera — only runs when not in follow-user mode.
   useEffect(() => {
-    if (!zoneCamera) {
+    if (cameraMode.mode === 'follow-user') {
       headingRef.current = 0;
       return;
     }
+
+    if (cameraMode.mode === 'city') {
+      headingRef.current = 0;
+      if (!cityCamera) return;
+      cameraRef.current?.setCamera({
+        centerCoordinate: cityCamera.center,
+        zoomLevel: cityCamera.zoom,
+        pitch: 0,
+        heading: 0,
+        animationDuration: FLYTO_DURATION_MS,
+        animationMode: 'flyTo',
+      });
+      return;
+    }
+
+    // mode === 'zone'
+    if (!zoneCamera) return;
 
     // FlyTo includes heading rotation so the orbit is visible from the first frame.
     cameraRef.current?.setCamera({
@@ -209,7 +215,7 @@ export function MapView() {
       clearTimeout(timeout);
       if (intervalId) clearInterval(intervalId);
     };
-  }, [zoneCamera, zoneCameraPadding]);
+  }, [cameraMode, cityCamera, zoneCamera, zoneCameraPadding]);
 
   // ── Zone markers (city view) ─────────────────────────────────────────────
 
@@ -274,11 +280,11 @@ export function MapView() {
   const markerOpacity = useSharedValue(1);
 
   useEffect(() => {
-    const fadingIn = viewState.mode === 'city';
+    const fadingIn = cameraMode.mode !== 'zone';
     markerOpacity.value = withTiming(fadingIn ? 1 : 0, {
       duration: fadingIn ? FLYTO_DURATION_MS : 200,
     });
-  }, [viewState.mode]);
+  }, [cameraMode.mode]);
 
   /** Animated style applied to each marker wrapper so they fade in/out with the flyTo. */
   const markerAnimatedStyle = useAnimatedStyle(() => ({
@@ -289,20 +295,10 @@ export function MapView() {
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
-  /** Return to the city overview via imperative flyTo so it isn't ignored. */
+  /** Return to city overview or follow-user — the camera effect handles the flyTo. */
   const handleBack = useCallback(() => {
-    setViewState({ mode: 'city' });
-    if (cityCamera) {
-      cameraRef.current?.setCamera({
-        centerCoordinate: cityCamera.center,
-        zoomLevel: cityCamera.zoom,
-        pitch: 0,
-        heading: 0,
-        animationDuration: 1000,
-        animationMode: 'flyTo',
-      });
-    }
-  }, [cityCamera]);
+    setCameraMode(city ? { mode: 'city' } : { mode: 'follow-user' });
+  }, [city]);
 
   // ── Render ───────────────────────────────────────────────────────────────
 
@@ -322,9 +318,10 @@ export function MapView() {
       >
         <Mapbox.Camera
           ref={cameraRef}
-          {...cameraProps}
+          followUserLocation={cameraMode.mode === 'follow-user'}
+          followZoomLevel={12}
           animationMode="flyTo"
-          animationDuration={1000}
+          animationDuration={FLYTO_DURATION_MS}
         />
 
         <Mapbox.LocationPuck puckBearingEnabled puckBearing="heading" />
@@ -385,7 +382,7 @@ export function MapView() {
             marker={marker}
             presenceCount={presenceCounts[marker.id] ?? 0}
             animatedStyle={markerAnimatedStyle}
-            onPress={() => setViewState({ mode: 'zone', zoneId: marker.id })}
+            onPress={() => setCameraMode({ mode: 'zone', zoneId: marker.id })}
           />
         ))}
       </Mapbox.MapView>
@@ -399,7 +396,7 @@ export function MapView() {
       )}
 
       <ZoneInfoCard
-        visible={viewState.mode === 'zone'}
+        visible={cameraMode.mode === 'zone'}
         bottomInset={insets.bottom}
         onClose={handleBack}
       />

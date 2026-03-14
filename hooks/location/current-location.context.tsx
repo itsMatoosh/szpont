@@ -9,9 +9,14 @@ interface CurrentLocationContextValue {
 
 const CurrentLocationContext = createContext<CurrentLocationContextValue | null>(null);
 
+/** How often the fallback poll fetches the current position (ms). */
+const POLL_INTERVAL_MS = 10_000;
+
 /**
  * Watches the device location when foreground permission is granted.
- * When permission is revoked or not yet granted, tears down the watcher
+ * Uses a distance-based watcher for responsive updates plus a periodic
+ * poll to catch simulated / static location changes the watcher misses.
+ * When permission is revoked or not yet granted, tears down everything
  * and resets location to null.
  */
 export function CurrentLocationProvider({ children }: { children: ReactNode }) {
@@ -27,6 +32,7 @@ export function CurrentLocationProvider({ children }: { children: ReactNode }) {
     let removed = false;
     let subscription: Location.LocationSubscription | undefined;
 
+    // Primary: distance-based watcher for responsive real-device updates.
     Location.watchPositionAsync(
       {
         accuracy: Location.Accuracy.Balanced,
@@ -37,16 +43,30 @@ export function CurrentLocationProvider({ children }: { children: ReactNode }) {
       },
     ).then((sub) => {
       if (removed) {
-        // Effect was cleaned up before the subscription resolved
         sub.remove();
       } else {
         subscription = sub;
       }
     });
 
+    // Fallback: periodic poll catches simulated location changes and
+    // edge cases where the distance filter silently swallows an update.
+    const interval = setInterval(async () => {
+      if (removed) return;
+      try {
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        if (!removed) setLocation(loc);
+      } catch {
+        // Silently ignore — watcher is the primary source.
+      }
+    }, POLL_INTERVAL_MS);
+
     return () => {
       removed = true;
       subscription?.remove();
+      clearInterval(interval);
     };
   }, [foregroundStatus]);
 
