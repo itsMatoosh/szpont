@@ -7,6 +7,7 @@ import {
   GEOFENCE_TASK,
   LOCATION_TASK,
   setCachedBoundaries,
+  setCachedZoneNames,
 } from '@/util/geofencing/geofencing.util';
 import { exitZone } from '@/util/presence/presence.util';
 
@@ -43,12 +44,15 @@ export function useGeofencing(cityId: string | undefined): void {
       const geofences = await getGeofencesByCity(cityId!);
       if (cancelled || geofences.length === 0) return;
 
-      // Build boundary cache keyed by zone_id
+      // Build boundary + name caches keyed by zone_id
       const boundaries: Record<string, unknown> = {};
+      const names: Record<string, string> = {};
       for (const gf of geofences) {
         boundaries[gf.zone_id] = gf.boundary;
+        names[gf.zone_id] = gf.zone_name;
       }
       setCachedBoundaries(boundaries);
+      setCachedZoneNames(names);
 
       // Build expo-location geofence regions
       const regions: Location.LocationRegion[] = geofences.map((gf) => ({

@@ -5,9 +5,10 @@ import { supabase } from '@/util/supabase/supabase.util';
 /** A circular geofence region tied to a zone. */
 export type Geofence = Database['public']['Tables']['geofences']['Row'];
 
-/** A geofence with its parent zone's boundary attached. */
+/** A geofence with its parent zone's boundary and name attached. */
 export interface GeofenceWithBoundary extends Geofence {
   boundary: Json;
+  zone_name: string;
 }
 
 /** Fetches all geofences belonging to a given zone. */
@@ -29,13 +30,13 @@ export async function getGeofencesByCity(
 ): Promise<GeofenceWithBoundary[]> {
   const { data, error } = await supabase
     .from('geofences')
-    .select('id, zone_id, latitude, longitude, radius, zones!inner(boundary, city_id)')
+    .select('id, zone_id, latitude, longitude, radius, zones!inner(name, boundary, city_id)')
     .eq('zones.city_id', cityId);
   if (error) throw error;
 
   // Flatten the nested zones relation into a flat object
   return (data ?? []).map((row) => {
-    const zone = row.zones as unknown as { boundary: Json };
+    const zone = row.zones as unknown as { boundary: Json; name: string };
     return {
       id: row.id,
       zone_id: row.zone_id,
@@ -43,6 +44,7 @@ export async function getGeofencesByCity(
       longitude: row.longitude,
       radius: row.radius,
       boundary: zone.boundary,
+      zone_name: zone.name,
     };
   });
 }

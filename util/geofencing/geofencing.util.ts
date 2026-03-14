@@ -24,6 +24,10 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 
 import { isPointInPolygon, parseGeoJsonPolygon } from '@/util/geo/geo.util';
+import {
+  showZoneEntryNotification,
+  showZoneExitNotification,
+} from '@/util/notifications/notifications.util';
 import { enterZone, exitZone } from '@/util/presence/presence.util';
 
 // ── Task names ─────────────────────────────────────────────────────────────────
@@ -35,6 +39,8 @@ export const LOCATION_TASK = 'szpont-location-task';
 
 const ACTIVE_ZONES_KEY = 'geofencing:activeZones';
 const ZONE_BOUNDARIES_KEY = 'geofencing:zoneBoundaries';
+const ZONE_NAMES_KEY = 'geofencing:zoneNames';
+const LAST_NOTIFIED_ZONE_KEY = 'geofencing:lastNotifiedZone';
 
 // ── Helpers for persisted state ────────────────────────────────────────────────
 
@@ -76,10 +82,45 @@ export function setCachedBoundaries(
   localStorage.setItem(ZONE_BOUNDARIES_KEY, JSON.stringify(boundaries));
 }
 
+/**
+ * Zone names are cached alongside boundaries so background tasks can include
+ * the human-readable name in notifications without a network call.
+ */
+function getCachedZoneNames(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(ZONE_NAMES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Persists a zoneId → name map for background notification copy. */
+export function setCachedZoneNames(names: Record<string, string>): void {
+  localStorage.setItem(ZONE_NAMES_KEY, JSON.stringify(names));
+}
+
+/** Returns the zone id we last showed a notification for (avoids duplicates). */
+function getLastNotifiedZone(): string | null {
+  return localStorage.getItem(LAST_NOTIFIED_ZONE_KEY);
+}
+
+/** Records the zone id that was last notified about. */
+function setLastNotifiedZone(zoneId: string): void {
+  localStorage.setItem(LAST_NOTIFIED_ZONE_KEY, zoneId);
+}
+
+/** Clears the last-notified-zone tracker (e.g. after an exit notification). */
+function clearLastNotifiedZone(): void {
+  localStorage.removeItem(LAST_NOTIFIED_ZONE_KEY);
+}
+
 /** Removes all persisted geofencing state (used on city change / cleanup). */
 export function clearGeofencingState(): void {
   localStorage.removeItem(ACTIVE_ZONES_KEY);
   localStorage.removeItem(ZONE_BOUNDARIES_KEY);
+  localStorage.removeItem(ZONE_NAMES_KEY);
+  localStorage.removeItem(LAST_NOTIFIED_ZONE_KEY);
 }
 
 // ── GEOFENCE_TASK ──────────────────────────────────────────────────────────────
@@ -133,9 +174,17 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
         await Location.stopLocationUpdatesAsync(LOCATION_TASK);
       }
 
-      // Exit any active presence
+      // Exit any active presence and notify the user
       try {
         await exitZone();
+
+        const lastZone = getLastNotifiedZone();
+        if (lastZone) {
+          const names = getCachedZoneNames();
+          const name = names[lastZone] ?? lastZone;
+          await showZoneExitNotification(name);
+          clearLastNotifiedZone();
+        }
       } catch (e) {
         console.warn('[GeofenceTask] failed to exit zone:', e);
       }
@@ -177,13 +226,35 @@ TaskManager.defineTask(LOCATION_TASK, async ({ data, error }) => {
     }
   }
 
+  const names = getCachedZoneNames();
+  const lastNotified = getLastNotifiedZone();
+
   try {
     if (matchedZoneId) {
-      // enter_zone is a no-op when already in the same zone
       await enterZone(matchedZoneId);
+
+      // Only notify when the zone changes to avoid duplicate notifications on
+      // every location tick (enterZone itself is idempotent for the same zone).
+      if (lastNotified !== matchedZoneId) {
+        // If the user moved directly between zones, send an exit notification
+        // for the previous zone first.
+        if (lastNotified) {
+          const prevName = names[lastNotified] ?? lastNotified;
+          await showZoneExitNotification(prevName);
+        }
+
+        const name = names[matchedZoneId] ?? matchedZoneId;
+        await showZoneEntryNotification(name);
+        setLastNotifiedZone(matchedZoneId);
+      }
     } else {
-      // exit_zone is a no-op when no presence exists
       await exitZone();
+
+      if (lastNotified) {
+        const name = names[lastNotified] ?? lastNotified;
+        await showZoneExitNotification(name);
+        clearLastNotifiedZone();
+      }
     }
   } catch (e) {
     // Network or auth error — will retry on next location tick

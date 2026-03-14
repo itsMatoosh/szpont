@@ -47,6 +47,7 @@
       "expo-apple-authentication",
       "expo-video",
       "expo-asset",
+      "expo-notifications",
       [
         "expo-location",
         {

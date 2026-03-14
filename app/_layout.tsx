@@ -21,6 +21,10 @@ import {
   useLocationPermissionContext,
 } from '@/hooks/location/location-permission.context';
 import { ProfileProvider, useProfileContext } from '@/hooks/profile/profile.context';
+import {
+  configureNotifications,
+  requestNotificationPermissions,
+} from '@/util/notifications/notifications.util';
 import { Colors } from '@/util/theme/theme.util';
 
 const queryClient = new QueryClient();
@@ -103,11 +107,17 @@ function RootNavigator({ session, userId }: { session: unknown; userId: string |
 
 /**
  * Headless component that starts background geofence monitoring once the
- * user's city is resolved and background location is granted.
+ * user's city is resolved and background location is granted. Also configures
+ * local notifications and requests permission so zone enter/exit alerts work.
  */
 function GeofencingInitializer() {
   const { city } = useNearestCity();
   const { backgroundStatus } = useLocationPermissionContext();
+
+  useEffect(() => {
+    configureNotifications();
+    requestNotificationPermissions();
+  }, []);
 
   useGeofencing(backgroundStatus === 'granted' ? city?.id : undefined);
 

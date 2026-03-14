@@ -38,6 +38,12 @@
     "continue": "Kontynuuj",
     "back": "Wróć"
   },
+  "notifications": {
+    "zoneEntryTitle": "Jesteś w {{zoneName}}",
+    "zoneEntryBody": "Witaj w strefie!",
+    "zoneExitTitle": "Opuściłeś/aś {{zoneName}}",
+    "zoneExitBody": "Do zobaczenia następnym razem!"
+  },
   "locationGate": {
     "foregroundTitle": "Włącz lokalizację",
     "foregroundMessage": "Potrzebujemy Twojej lokalizacji, aby pokazać Ci strefy Szpontu w pobliżu.",
