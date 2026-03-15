@@ -469,6 +469,26 @@ export function resolveOverlaps(
   };
 }
 
+// ── Bounding-box helpers ──────────────────────────────────────────────────────
+
+/**
+ * Returns a new bbox whose each edge is pushed outward by `fraction` of the
+ * original span. For example `fraction = 0.2` adds 20 % padding on every side.
+ */
+export function expandBoundingBox(
+  bbox: [number, number, number, number],
+  fraction: number,
+): [number, number, number, number] {
+  const lngPad = (bbox[2] - bbox[0]) * fraction;
+  const latPad = (bbox[3] - bbox[1]) * fraction;
+  return [
+    bbox[0] - lngPad,
+    bbox[1] - latPad,
+    bbox[2] + lngPad,
+    bbox[3] + latPad,
+  ];
+}
+
 // ── Internal helpers ───────────────────────────────────────────────────────────
 
 /** Recursively flattens any GeoJSON geometry into a flat array of [lng, lat] pairs. */

@@ -1,3 +1,4 @@
+import * as Location from 'expo-location';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -6,20 +7,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CityLabel } from '@/components/city-label/city-label.component';
 import { ZoneInfoCard } from '@/components/zone-info-card/zone-info-card.component';
 import { ZoneMarker } from '@/components/zone-marker/zone-marker.component';
+import { useActiveZoneId } from '@/hooks/active-zone/use-active-zone-id.hook';
 import { useNearestCity } from '@/hooks/cities/use-nearest-city.hook';
 import { useZonesPresenceCounts } from '@/hooks/presence/use-zones-presence-counts.hook';
 import { useTabBarVisibility } from '@/hooks/tab-bar/tab-bar-visibility.context';
 import { useZonesByCity } from '@/hooks/zones/use-zones-by-city.hook';
 import Mapbox from '@/util/mapbox/mapbox.util';
 
-import { getBoundingBox, getOrientedEnvelope, getZoomForBoundingBox, resolveOverlaps, type ResolvedMarker, type DebugOverlayData } from './map-view.util';
+import { expandBoundingBox, getBoundingBox, getOrientedEnvelope, getZoomForBoundingBox, resolveOverlaps, type ResolvedMarker, type DebugOverlayData } from './map-view.util';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 type CameraMode =
   | { mode: 'follow-user' }
   | { mode: 'city' }
-  | { mode: 'zone'; zoneId: string };
+  | { mode: 'zone'; zoneId: string }
+  | { mode: 'zone-active'; zoneId: string };
 
 /** Set to `true` to render bounding-box and viewport debug overlay on the map. */
 const SHOW_DEBUG_OVERLAY = false;
@@ -44,6 +47,8 @@ const ZONE_CARD_HEIGHT_PX = 80;
 const SLIDE_ASPECT_THRESHOLD = 1.8;
 /** Fraction of the OMBR major-axis half-length used for each slide endpoint (0 = center, 1 = edge). */
 const SLIDE_INSET = 0.6;
+/** How much each bbox axis is expanded for zone-active maxBounds (0.05 = 5 % padding per side). */
+const ZONE_ACTIVE_BOUNDS_PADDING = 0.05;
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -57,16 +62,33 @@ export function MapView() {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
   const { setHidden: setTabBarHidden } = useTabBarVisibility();
+  const activeZoneId = useActiveZoneId();
 
   const [cameraMode, setCameraMode] = useState<CameraMode>({ mode: 'follow-user' });
   const [displayMode, setDisplayMode] = useState<CameraMode>({ mode: 'follow-user' });
   const cameraRef = useRef<Mapbox.Camera>(null);
   const headingRef = useRef(0);
 
-  // Sync displayMode to cameraMode with a delay on zone→non-zone so UI
-  // elements stay visible while the fly-out animation plays.
+  // ── Zone-active auto-enter / auto-exit ──────────────────────────────────
+  // When the OS geofencing detects the user inside a zone, take over the
+  // map. When they leave, revert to the previous non-active mode.
+
   useEffect(() => {
-    if (cameraMode.mode === 'zone') {
+    if (activeZoneId) {
+      setCameraMode({ mode: 'zone-active', zoneId: activeZoneId });
+    } else {
+      setCameraMode((prev) =>
+        prev.mode === 'zone-active'
+          ? city ? { mode: 'city' } : { mode: 'follow-user' }
+          : prev,
+      );
+    }
+  }, [activeZoneId, city]);
+
+  // Sync displayMode to cameraMode with a delay on zone/zone-active → other
+  // so UI elements stay visible while the fly-out animation plays.
+  useEffect(() => {
+    if (cameraMode.mode === 'zone' || cameraMode.mode === 'zone-active') {
       setDisplayMode(cameraMode);
     } else {
       const id = setTimeout(() => setDisplayMode(cameraMode), FLYTO_DURATION_MS);
@@ -76,7 +98,7 @@ export function MapView() {
 
   // Hide the native tab bar while a zone is displayed
   useEffect(() => {
-    setTabBarHidden(displayMode.mode === 'zone');
+    setTabBarHidden(displayMode.mode === 'zone' || displayMode.mode === 'zone-active');
   }, [displayMode.mode, setTabBarHidden]);
 
   // ── City-change effect ───────────────────────────────────────────────────
@@ -90,21 +112,45 @@ export function MapView() {
     prevCityIdRef.current = city?.id;
     if (city?.id === prev) return;
 
-    setCameraMode(city ? { mode: 'city' } : { mode: 'follow-user' });
+    // Don't override zone-active — it is controlled by the active-zone effect
+    setCameraMode((current) =>
+      current.mode === 'zone-active'
+        ? current
+        : city ? { mode: 'city' } : { mode: 'follow-user' },
+    );
   }, [city]);
 
   // ── Derived camera values ────────────────────────────────────────────────
 
   const activeZone =
-    cameraMode.mode === 'zone'
+    cameraMode.mode === 'zone' || cameraMode.mode === 'zone-active'
       ? zones.find((z) => z.id === cameraMode.zoneId)
       : undefined;
 
   /** Zone resolved from displayMode — keeps card content stable during fly-out. */
   const displayZone =
-    displayMode.mode === 'zone'
+    displayMode.mode === 'zone' || displayMode.mode === 'zone-active'
       ? zones.find((z) => z.id === displayMode.zoneId)
       : undefined;
+
+  /** Bounds and min-zoom used to constrain the camera in zone-active mode. */
+  const zoneActiveCamera = useMemo(() => {
+    if (cameraMode.mode !== 'zone-active') return undefined;
+    const zone = zones.find((z) => z.id === cameraMode.zoneId);
+    if (!zone) return undefined;
+    const geom = zone.boundary as unknown as GeoJSON.Geometry;
+    const bbox = getBoundingBox(geom);
+    if (!bbox) return undefined;
+    const expanded = expandBoundingBox(bbox, ZONE_ACTIVE_BOUNDS_PADDING);
+    return {
+      bounds: {
+        ne: [expanded[2], expanded[3]] as [number, number],
+        sw: [expanded[0], expanded[1]] as [number, number],
+      },
+      bbox,
+      minZoom: getZoomForBoundingBox(bbox) + 0.5,
+    };
+  }, [cameraMode, zones]);
 
   /** Camera framing derived from the union bounding box of all zones. */
   const cityCamera = useMemo(() => {
@@ -182,7 +228,8 @@ export function MapView() {
     [insets.bottom],
   );
 
-  // City overview and zone orbit camera — only runs when not in follow-user mode.
+  // Camera positioning for each mode. follow-user is handled declaratively
+  // by the Camera prop; the rest use imperative setCamera calls.
   useEffect(() => {
     if (cameraMode.mode === 'follow-user') {
       headingRef.current = 0;
@@ -192,6 +239,7 @@ export function MapView() {
     if (cameraMode.mode === 'city') {
       headingRef.current = 0;
       if (!cityCamera) return;
+
       cameraRef.current?.setCamera({
         centerCoordinate: cityCamera.center,
         zoomLevel: cityCamera.zoom,
@@ -200,6 +248,42 @@ export function MapView() {
         animationDuration: FLYTO_DURATION_MS,
         animationMode: 'flyTo',
       });
+      return;
+    }
+
+    if (cameraMode.mode === 'zone-active') {
+      headingRef.current = 0;
+      if (!zoneActiveCamera) return;
+
+      const zoneCenter: [number, number] = [
+        (zoneActiveCamera.bbox[0] + zoneActiveCamera.bbox[2]) / 2,
+        (zoneActiveCamera.bbox[1] + zoneActiveCamera.bbox[3]) / 2,
+      ];
+
+      // Fetch a fresh device position so we zoom to where the user
+      // actually is right now, not a potentially stale cached value.
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+        .then((loc) => {
+          cameraRef.current?.setCamera({
+            centerCoordinate: [loc.coords.longitude, loc.coords.latitude],
+            zoomLevel: MIN_ZONE_ZOOM,
+            pitch: 0,
+            heading: 0,
+            animationDuration: FLYTO_DURATION_MS,
+            animationMode: 'flyTo',
+          });
+        })
+        .catch(() => {
+          // Permission denied or unavailable — fall back to zone center.
+          cameraRef.current?.setCamera({
+            centerCoordinate: zoneCenter,
+            zoomLevel: MIN_ZONE_ZOOM,
+            pitch: 0,
+            heading: 0,
+            animationDuration: FLYTO_DURATION_MS,
+            animationMode: 'flyTo',
+          });
+        });
       return;
     }
 
@@ -258,7 +342,7 @@ export function MapView() {
       clearTimeout(timeout);
       if (intervalId) clearInterval(intervalId);
     };
-  }, [cameraMode, cityCamera, zoneCamera, zoneCameraPadding]);
+  }, [cameraMode, cityCamera, zoneCamera, zoneActiveCamera, zoneCameraPadding]);
 
   // ── Zone markers (city view) ─────────────────────────────────────────────
 
@@ -323,7 +407,7 @@ export function MapView() {
   const markerOpacity = useSharedValue(1);
 
   useEffect(() => {
-    const fadingIn = cameraMode.mode !== 'zone';
+    const fadingIn = cameraMode.mode !== 'zone' && cameraMode.mode !== 'zone-active';
     markerOpacity.value = withTiming(fadingIn ? 1 : 0, {
       duration: fadingIn ? FLYTO_DURATION_MS : 200,
     });
@@ -343,6 +427,8 @@ export function MapView() {
     setCameraMode(city ? { mode: 'city' } : { mode: 'follow-user' });
   }, [city]);
 
+  const isZoneActive = cameraMode.mode === 'zone-active';
+
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -350,10 +436,10 @@ export function MapView() {
       <Mapbox.MapView
         style={styles.map}
         styleURL="mapbox://styles/mapbox/dark-v11"
-        pitchEnabled={false}
-        rotateEnabled={false}
-        zoomEnabled={false}
-        scrollEnabled={false}
+        pitchEnabled={isZoneActive}
+        rotateEnabled={isZoneActive}
+        zoomEnabled={isZoneActive}
+        scrollEnabled={isZoneActive}
         logoEnabled={false}
         attributionEnabled={false}
         compassEnabled={false}
@@ -379,8 +465,8 @@ export function MapView() {
                 fillColor: '#CCFF00',
                 fillOpacity: [
                   'interpolate', ['linear'], ['zoom'],
-                  13, 0,
-                  15, 0.15,
+                  12, 0,
+                  13, 0.15,
                 ],
               }}
             />
@@ -392,8 +478,8 @@ export function MapView() {
                 lineWidth: 2,
                 lineOpacity: [
                   'interpolate', ['linear'], ['zoom'],
-                  13, 0,
-                  15, 0.8,
+                  12, 0,
+                  13, 0.8,
                 ],
               }}
             />

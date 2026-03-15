@@ -97,6 +97,7 @@ export function clearGeofencingState(): void {
   localStorage.removeItem(ACTIVE_GEOFENCES_KEY);
   localStorage.removeItem(ZONE_NAMES_KEY);
   localStorage.removeItem(LAST_NOTIFIED_ZONE_KEY);
+  refreshActiveZone();
 }
 
 /** Returns true if any active geofence belongs to the given zone. */
@@ -105,6 +106,43 @@ function hasActiveGeofenceForZone(
   zoneId: string,
 ): boolean {
   return Object.values(activeGeofences).includes(zoneId);
+}
+
+// ── Active-zone external store ─────────────────────────────────────────────────
+// Lets React subscribe (via useSyncExternalStore) to the zone the user is
+// physically inside, without polling.
+
+/** Derives the single active zone ID from the geofence→zone map, or null. */
+function readActiveZoneIdFromStorage(): string | null {
+  const map = getActiveGeofences();
+  const zoneIds = [...new Set(Object.values(map))];
+  return zoneIds[0] ?? null;
+}
+
+let _cachedActiveZoneId: string | null = readActiveZoneIdFromStorage();
+const _listeners = new Set<() => void>();
+
+/**
+ * Re-reads localStorage and notifies subscribers if the active zone changed.
+ * Called internally after every geofence event and exported so the AppState
+ * foreground handler can force a refresh.
+ */
+export function refreshActiveZone(): void {
+  const next = readActiveZoneIdFromStorage();
+  if (next === _cachedActiveZoneId) return;
+  _cachedActiveZoneId = next;
+  for (const fn of _listeners) fn();
+}
+
+/** `useSyncExternalStore` subscribe callback. */
+export function subscribeActiveZone(onStoreChange: () => void): () => void {
+  _listeners.add(onStoreChange);
+  return () => { _listeners.delete(onStoreChange); };
+}
+
+/** `useSyncExternalStore` getSnapshot callback. */
+export function getActiveZoneIdSnapshot(): string | null {
+  return _cachedActiveZoneId;
 }
 
 // ── GEOFENCE_TASK ──────────────────────────────────────────────────────────────
@@ -155,6 +193,8 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
     } catch (e) {
       console.warn('[GeofenceTask] failed to enter zone:', e);
     }
+
+    refreshActiveZone();
   } else if (eventType === Location.GeofencingEventType.Exit) {
     delete active[geofenceId];
     setActiveGeofences(active);
@@ -176,5 +216,7 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
         console.warn('[GeofenceTask] failed to exit zone:', e);
       }
     }
+
+    refreshActiveZone();
   }
 });
