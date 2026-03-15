@@ -78,6 +78,149 @@ export function getZoomForBoundingBox(
   return Math.min(Math.max(zoom, 0), 20);
 }
 
+// ── Oriented envelope ─────────────────────────────────────────────────────────
+
+/** 2D cross product of vectors OA and OB — positive when the turn O→A→B is counter-clockwise. */
+function cross(o: [number, number], a: [number, number], b: [number, number]): number {
+  return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+}
+
+/**
+ * Andrew's monotone-chain convex hull. Returns vertices in CCW order
+ * without a repeated closing vertex. Input must have >= 2 points.
+ */
+function convexHull(points: [number, number][]): [number, number][] {
+  const pts = points.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  if (pts.length <= 1) return pts;
+
+  const lower: [number, number][] = [];
+  for (const p of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0)
+      lower.pop();
+    lower.push(p);
+  }
+
+  const upper: [number, number][] = [];
+  for (let i = pts.length - 1; i >= 0; i--) {
+    const p = pts[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0)
+      upper.pop();
+    upper.push(p);
+  }
+
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
+}
+
+/**
+ * Computes the oriented minimum bounding rectangle (OMBR) of a GeoJSON
+ * geometry via convex hull + rotating calipers. Returns the rectangle's
+ * center and the two endpoints of its major (longer) axis in [lng, lat],
+ * plus the aspect ratio (long / short). Returns `null` for degenerate input.
+ *
+ * Internally projects to an equirectangular plane (lng scaled by cos(midLat))
+ * so the aspect ratio and axis direction are metrically accurate.
+ */
+export function getOrientedEnvelope(
+  geometry: GeoJSON.Geometry,
+): {
+  center: [number, number];
+  majorStart: [number, number];
+  majorEnd: [number, number];
+  aspect: number;
+} | null {
+  const coords = extractCoordinates(geometry);
+  if (coords.length < 3) return null;
+
+  // Project to equirectangular so 1° x ≈ 1° y in real-world distance
+  let sumLat = 0;
+  for (const [, lat] of coords) sumLat += lat;
+  const midLat = sumLat / coords.length;
+  const cosLat = Math.cos((midLat * Math.PI) / 180);
+  if (cosLat < 1e-6) return null;
+
+  const projected: [number, number][] = coords.map(([lng, lat]) => [lng * cosLat, lat]);
+
+  const hull = convexHull(projected);
+  if (hull.length < 2) return null;
+
+  // For each hull edge, compute the aligned bounding rectangle and keep
+  // the one with the smallest area (rotating-calipers approach).
+  let bestArea = Infinity;
+  let bestMinPar = 0;
+  let bestMaxPar = 0;
+  let bestMinPerp = 0;
+  let bestMaxPerp = 0;
+  let bestDx = 1;
+  let bestDy = 0;
+
+  for (let i = 0; i < hull.length; i++) {
+    const j = (i + 1) % hull.length;
+    let dx = hull[j][0] - hull[i][0];
+    let dy = hull[j][1] - hull[i][1];
+    const len = Math.hypot(dx, dy);
+    if (len === 0) continue;
+    dx /= len;
+    dy /= len;
+
+    let minPar = Infinity;
+    let maxPar = -Infinity;
+    let minPerp = Infinity;
+    let maxPerp = -Infinity;
+
+    for (const p of hull) {
+      const par = p[0] * dx + p[1] * dy;
+      const perp = -p[0] * dy + p[1] * dx;
+      if (par < minPar) minPar = par;
+      if (par > maxPar) maxPar = par;
+      if (perp < minPerp) minPerp = perp;
+      if (perp > maxPerp) maxPerp = perp;
+    }
+
+    const area = (maxPar - minPar) * (maxPerp - minPerp);
+    if (area < bestArea) {
+      bestArea = area;
+      bestMinPar = minPar;
+      bestMaxPar = maxPar;
+      bestMinPerp = minPerp;
+      bestMaxPerp = maxPerp;
+      bestDx = dx;
+      bestDy = dy;
+    }
+  }
+
+  const parLen = bestMaxPar - bestMinPar;
+  const perpLen = bestMaxPerp - bestMinPerp;
+  const midPar = (bestMinPar + bestMaxPar) / 2;
+  const midPerp = (bestMinPerp + bestMaxPerp) / 2;
+
+  // Reconstruct projected coordinates from (par, perp) via the basis vectors:
+  // x = par * dx - perp * dy,  y = par * dy + perp * dx
+  const cx = midPar * bestDx - midPerp * bestDy;
+  const cy = midPar * bestDy + midPerp * bestDx;
+
+  // Major-axis endpoints sit at the midpoints of the two shorter edges
+  let ms: [number, number];
+  let me: [number, number];
+
+  if (parLen >= perpLen) {
+    ms = [bestMinPar * bestDx - midPerp * bestDy, bestMinPar * bestDy + midPerp * bestDx];
+    me = [bestMaxPar * bestDx - midPerp * bestDy, bestMaxPar * bestDy + midPerp * bestDx];
+  } else {
+    ms = [midPar * bestDx - bestMinPerp * bestDy, midPar * bestDy + bestMinPerp * bestDx];
+    me = [midPar * bestDx - bestMaxPerp * bestDy, midPar * bestDy + bestMaxPerp * bestDx];
+  }
+
+  // Un-project back to [lng, lat]
+  return {
+    center: [cx / cosLat, cy],
+    majorStart: [ms[0] / cosLat, ms[1]],
+    majorEnd: [me[0] / cosLat, me[1]],
+    aspect: Math.max(parLen, perpLen) / Math.max(Math.min(parLen, perpLen), 1e-12),
+  };
+}
+
 // ── Marker overlap resolution ─────────────────────────────────────────────────
 
 /** Fixed marker height derived from MarkerBubble: paddingVertical 8 + icon 32 + paddingVertical 8. */

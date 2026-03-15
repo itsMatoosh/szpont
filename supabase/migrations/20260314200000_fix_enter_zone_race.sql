@@ -3,8 +3,14 @@
 -- Uses INSERT ... ON CONFLICT for a single atomic upsert instead.
 
 -- Ensure the unique constraint exists (may have been dropped manually)
-alter table presence
-  add constraint one_presence_per_user unique (user_id);
+do $$
+begin
+  alter table presence
+    add constraint one_presence_per_user unique (user_id);
+exception when duplicate_table then
+  null;
+end;
+$$;
 
 create or replace function enter_zone(p_zone_id uuid)
 returns void language plpgsql security definer as $$

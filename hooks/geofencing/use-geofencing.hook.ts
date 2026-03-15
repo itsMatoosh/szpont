@@ -5,8 +5,6 @@ import { getGeofencesByCity } from '@/util/geofences/geofences.util';
 import {
   clearGeofencingState,
   GEOFENCE_TASK,
-  LOCATION_TASK,
-  setCachedBoundaries,
   setCachedZoneNames,
 } from '@/util/geofencing/geofencing.util';
 import { exitZone } from '@/util/presence/presence.util';
@@ -14,8 +12,8 @@ import { exitZone } from '@/util/presence/presence.util';
 /**
  * Initialises background geofence monitoring for the given city.
  *
- * - Fetches all circular geofences (and their zone boundaries) for the city
- * - Caches zone boundaries in localStorage for offline point-in-polygon checks
+ * - Fetches all circular geofences for the city's zones
+ * - Caches zone names in localStorage for background notification copy
  * - Registers the geofences with `expo-location` so the OS delivers
  *   enter/exit events even when the app is killed
  * - Re-registers when the city changes (user travels)
@@ -44,14 +42,11 @@ export function useGeofencing(cityId: string | undefined): void {
       const geofences = await getGeofencesByCity(cityId!);
       if (cancelled || geofences.length === 0) return;
 
-      // Build boundary + name caches keyed by zone_id
-      const boundaries: Record<string, unknown> = {};
+      // Cache zone names keyed by zone_id for background notifications
       const names: Record<string, string> = {};
       for (const gf of geofences) {
-        boundaries[gf.zone_id] = gf.boundary;
         names[gf.zone_id] = gf.zone_name;
       }
-      setCachedBoundaries(boundaries);
       setCachedZoneNames(names);
 
       // Build expo-location geofence regions
@@ -81,18 +76,13 @@ export function useGeofencing(cityId: string | undefined): void {
 // ── Teardown ───────────────────────────────────────────────────────────────────
 
 /**
- * Stops all geofencing and location tracking, exits any active presence,
+ * Stops geofence monitoring, exits any active presence,
  * and clears persisted state.
  */
 async function teardown(): Promise<void> {
   const isGeofencing = await Location.hasStartedGeofencingAsync(GEOFENCE_TASK).catch(() => false);
   if (isGeofencing) {
     await Location.stopGeofencingAsync(GEOFENCE_TASK);
-  }
-
-  const isTracking = await Location.hasStartedLocationUpdatesAsync(LOCATION_TASK).catch(() => false);
-  if (isTracking) {
-    await Location.stopLocationUpdatesAsync(LOCATION_TASK);
   }
 
   try {

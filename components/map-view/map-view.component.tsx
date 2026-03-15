@@ -12,7 +12,7 @@ import { useTabBarVisibility } from '@/hooks/tab-bar/tab-bar-visibility.context'
 import { useZonesByCity } from '@/hooks/zones/use-zones-by-city.hook';
 import Mapbox from '@/util/mapbox/mapbox.util';
 
-import { getBoundingBox, getZoomForBoundingBox, resolveOverlaps, type ResolvedMarker, type DebugOverlayData } from './map-view.util';
+import { getBoundingBox, getOrientedEnvelope, getZoomForBoundingBox, resolveOverlaps, type ResolvedMarker, type DebugOverlayData } from './map-view.util';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -40,6 +40,10 @@ const FLYTO_HEADING = (ORBIT_STEP_DEG / ORBIT_INTERVAL_MS) * FLYTO_DURATION_MS;
 const MIN_ZONE_ZOOM = 15;
 /** Estimated height (px) of the zone info card content, used as camera bottom padding. */
 const ZONE_CARD_HEIGHT_PX = 80;
+/** OMBR aspect ratio above which the orbit also slides along the major axis. */
+const SLIDE_ASPECT_THRESHOLD = 1.8;
+/** Fraction of the OMBR major-axis half-length used for each slide endpoint (0 = center, 1 = edge). */
+const SLIDE_INSET = 0.6;
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -129,15 +133,37 @@ export function MapView() {
     };
   }, [zones]);
 
-  /** Center and zoom derived from the active zone's bounding box. */
+  /** Center, zoom, and optional slide endpoints derived from the active zone's oriented envelope. */
   const zoneCamera = useMemo(() => {
     if (!activeZone) return undefined;
-    const bbox = getBoundingBox(activeZone.boundary as unknown as GeoJSON.Geometry);
+    const geom = activeZone.boundary as unknown as GeoJSON.Geometry;
+
+    const envelope = getOrientedEnvelope(geom);
+    if (!envelope) return undefined;
+
+    const bbox = getBoundingBox(geom);
     if (!bbox) return undefined;
-    return {
-      center: [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2] as [number, number],
-      zoom: Math.max(getZoomForBoundingBox(bbox, ZONE_PITCH), MIN_ZONE_ZOOM),
-    };
+
+    const { center, majorStart, majorEnd, aspect } = envelope;
+    const zoom = Math.max(getZoomForBoundingBox(bbox, ZONE_PITCH), MIN_ZONE_ZOOM);
+
+    let slideEndpoints: { start: [number, number]; end: [number, number] } | null = null;
+
+    if (aspect >= SLIDE_ASPECT_THRESHOLD) {
+      // Inset from the full major-axis endpoints toward center
+      slideEndpoints = {
+        start: [
+          center[0] + (majorStart[0] - center[0]) * SLIDE_INSET,
+          center[1] + (majorStart[1] - center[1]) * SLIDE_INSET,
+        ],
+        end: [
+          center[0] + (majorEnd[0] - center[0]) * SLIDE_INSET,
+          center[1] + (majorEnd[1] - center[1]) * SLIDE_INSET,
+        ],
+      };
+    }
+
+    return { center, zoom, slideEndpoints };
   }, [activeZone]);
 
   // ── Camera effect ────────────────────────────────────────────────────────
@@ -180,9 +206,15 @@ export function MapView() {
     // mode === 'zone'
     if (!zoneCamera) return;
 
+    const { slideEndpoints } = zoneCamera;
+
+    // For elongated zones the flyTo lands at the slide start so the tour
+    // begins from one end; compact zones use the bbox center as before.
+    const flyToCenter = slideEndpoints ? slideEndpoints.start : zoneCamera.center;
+
     // FlyTo includes heading rotation so the orbit is visible from the first frame.
     cameraRef.current?.setCamera({
-      centerCoordinate: zoneCamera.center,
+      centerCoordinate: flyToCenter,
       zoomLevel: zoneCamera.zoom,
       pitch: ZONE_PITCH,
       heading: FLYTO_HEADING,
@@ -199,8 +231,19 @@ export function MapView() {
     const timeout = setTimeout(() => {
       intervalId = setInterval(() => {
         headingRef.current = (headingRef.current + ORBIT_STEP_DEG) % 360;
+
+        // Sinusoidal ping-pong along the major axis for elongated zones
+        let center = zoneCamera.center;
+        if (slideEndpoints) {
+          const t = (Math.sin((headingRef.current * Math.PI) / 180 - Math.PI / 2) + 1) / 2;
+          center = [
+            slideEndpoints.start[0] + t * (slideEndpoints.end[0] - slideEndpoints.start[0]),
+            slideEndpoints.start[1] + t * (slideEndpoints.end[1] - slideEndpoints.start[1]),
+          ];
+        }
+
         cameraRef.current?.setCamera({
-          centerCoordinate: zoneCamera.center,
+          centerCoordinate: center,
           zoomLevel: zoneCamera.zoom,
           pitch: ZONE_PITCH,
           heading: headingRef.current,
