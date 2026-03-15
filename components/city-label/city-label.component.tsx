@@ -1,7 +1,9 @@
 import { GlassView } from 'expo-glass-effect';
 import { useEffect, useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, useColorScheme, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+
+import { Colors } from '@/util/theme/theme.util';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -24,6 +26,8 @@ interface CityLabelProps {
 
 /** Persistent frosted-glass label at the top of the map that adapts to city / zone mode. */
 export function CityLabel({ name, zoneName, topInset }: CityLabelProps) {
+  const colorScheme = useColorScheme();
+  const palette = colorScheme === 'dark' ? Colors.dark : Colors.light;
   const subtitleProgress = useSharedValue(zoneName ? 1 : 0);
 
   // Keep the last zone name so it stays visible during the fade-out.
@@ -52,18 +56,21 @@ export function CityLabel({ name, zoneName, topInset }: CityLabelProps) {
     <Animated.View style={[styles.wrapper, { top: topInset + 4 }]}>
       <GlassView style={styles.pill}>
         <Animated.View style={[styles.subtitleRow, subtitleStyle]}>
-          <Text style={styles.citySubtitle} numberOfLines={1}>
+          <Text style={[styles.citySubtitle, { color: palette.muted }]} numberOfLines={1}>
             {name}
           </Text>
         </Animated.View>
 
         {/* Stacked labels — one fades out while the other fades in */}
         <View style={styles.mainLabelContainer}>
-          <Animated.Text style={[styles.mainLabel, cityNameStyle]} numberOfLines={1}>
+          <Animated.Text
+            style={[styles.mainLabel, { color: palette.foreground }, cityNameStyle]}
+            numberOfLines={1}
+          >
             {name}
           </Animated.Text>
           <Animated.Text
-            style={[styles.mainLabel, styles.mainLabelOverlay, zoneNameStyle]}
+            style={[styles.mainLabel, styles.mainLabelOverlay, { color: palette.foreground }, zoneNameStyle]}
             numberOfLines={1}
           >
             {lastZoneNameRef.current}
@@ -92,7 +99,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   citySubtitle: {
-    color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.3,
@@ -102,7 +108,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   mainLabel: {
-    color: '#FFFFFF',
     fontSize: 22,
     fontWeight: '800',
     letterSpacing: 0.5,

@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, Text, useColorScheme, useWindowDimensions, View } from 'react-native';
 import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -52,8 +52,21 @@ const ZONE_ACTIVE_BOUNDS_PADDING = 0.05;
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
+/** Mapbox style URLs keyed by system color scheme; light map for light mode, dark for dark. */
+const MAP_STYLE_URL = {
+  dark: 'mapbox://styles/mapbox/dark-v11',
+  light: 'mapbox://styles/mapbox/light-v11',
+} as const;
+
+/** 3D building extrusion color per theme — light gray on light map so buildings read as light-mode. */
+const BUILDING_EXTRUSION_COLOR = {
+  dark: '#aaa',
+  light: '#b0b0b0',
+} as const;
+
 /** Full-screen Mapbox map showing zone polygons with locked panning. */
 export function MapView() {
+  const colorScheme = useColorScheme();
   const { city } = useNearestCity();
   const { zones } = useZonesByCity(city?.id);
   const zoneIds = useMemo(() => zones.map((z) => z.id), [zones]);
@@ -68,6 +81,9 @@ export function MapView() {
   const [displayMode, setDisplayMode] = useState<CameraMode>({ mode: 'follow-user' });
   const cameraRef = useRef<Mapbox.Camera>(null);
   const headingRef = useRef(0);
+  const mapRef = useRef<InstanceType<typeof Mapbox.MapView> | null>(null);
+  /** Last known map center/zoom; restored after style change remount so camera does not jump to default. */
+  const savedCameraRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
 
   // ── Zone-active auto-enter / auto-exit ──────────────────────────────────
   // When the OS geofencing detects the user inside a zone, take over the
@@ -429,13 +445,41 @@ export function MapView() {
 
   const isZoneActive = cameraMode.mode === 'zone-active';
 
+  const theme = colorScheme === 'dark' ? 'dark' : 'light';
+  const mapStyleURL = MAP_STYLE_URL[theme];
+  const buildingExtrusionColor = BUILDING_EXTRUSION_COLOR[theme];
+
   // ── Render ───────────────────────────────────────────────────────────────
+
+  const handleMapIdle = useCallback(() => {
+    mapRef.current?.getCenter().then((center) => {
+      if (!center) return;
+      mapRef.current?.getZoom().then((zoom) => {
+        if (zoom != null) savedCameraRef.current = { center: center as [number, number], zoom };
+      });
+    });
+  }, []);
+
+  const handleDidFinishLoadingStyle = useCallback(() => {
+    const saved = savedCameraRef.current;
+    if (saved) {
+      cameraRef.current?.setCamera({
+        centerCoordinate: saved.center,
+        zoomLevel: saved.zoom,
+        animationDuration: 0,
+      });
+    }
+  }, [mapStyleURL]);
 
   return (
     <View style={styles.container}>
       <Mapbox.MapView
+        ref={mapRef}
+        key={mapStyleURL}
         style={styles.map}
-        styleURL="mapbox://styles/mapbox/dark-v11"
+        styleURL={mapStyleURL}
+        onMapIdle={handleMapIdle}
+        onDidFinishLoadingStyle={handleDidFinishLoadingStyle}
         pitchEnabled={isZoneActive}
         rotateEnabled={isZoneActive}
         zoomEnabled={isZoneActive}
@@ -454,6 +498,25 @@ export function MapView() {
         />
 
         <Mapbox.LocationPuck puckBearingEnabled puckBearing="heading" />
+
+        {/* 3D building extrusions — rendered first so zone layers can use belowLayerID="3d-buildings" */}
+        <Mapbox.FillExtrusionLayer
+          id="3d-buildings"
+          sourceID="composite"
+          sourceLayerID="building"
+          minZoomLevel={0}
+          maxZoomLevel={24}
+          style={{
+            fillExtrusionColor: buildingExtrusionColor,
+            fillExtrusionHeight: ['get', 'height'],
+            fillExtrusionBase: ['get', 'min_height'],
+            fillExtrusionOpacity: [
+              'interpolate', ['linear'], ['zoom'],
+              13, 0,
+              14.5, 0.9,
+            ],
+          }}
+        />
 
         {/* Selected zone boundary — only visible in zone view, below buildings */}
         {displayedZoneFeature && (
@@ -485,24 +548,6 @@ export function MapView() {
             />
           </Mapbox.ShapeSource>
         )}
-
-        {/* 3D building extrusions — on top of zone polygons */}
-        <Mapbox.FillExtrusionLayer
-          id="3d-buildings"
-          sourceLayerID="building"
-          minZoomLevel={0}
-          maxZoomLevel={24}
-          style={{
-            fillExtrusionColor: '#aaa',
-            fillExtrusionHeight: ['get', 'height'],
-            fillExtrusionBase: ['get', 'min_height'],
-            fillExtrusionOpacity: [
-              'interpolate', ['linear'], ['zoom'],
-              13, 0,
-              14.5, 0.9,
-            ],
-          }}
-        />
 
         {/* Zone markers — always rendered, opacity animated during transitions */}
         {zoneMarkers.map((marker) => (
