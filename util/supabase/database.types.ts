@@ -32,6 +32,76 @@ export type Database = {
         }
         Relationships: []
       }
+      device_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          token?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      devices: {
+        Row: {
+          background_secret: string
+          created_at: string
+          expo_push_token: string | null
+          id: string
+          locale: string
+          platform: string
+          user_id: string
+          zone_live_activity_token: string | null
+        }
+        Insert: {
+          background_secret?: string
+          created_at?: string
+          expo_push_token?: string | null
+          id?: string
+          locale?: string
+          platform: string
+          user_id: string
+          zone_live_activity_token?: string | null
+        }
+        Update: {
+          background_secret?: string
+          created_at?: string
+          expo_push_token?: string | null
+          id?: string
+          locale?: string
+          platform?: string
+          user_id?: string
+          zone_live_activity_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "devices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       geofences: {
         Row: {
           id: string
@@ -64,23 +134,77 @@ export type Database = {
           },
         ]
       }
+      location_updates: {
+        Row: {
+          accuracy: number | null
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          recorded_at: string | null
+          user_id: string
+          zone_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          recorded_at?: string | null
+          user_id: string
+          zone_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          recorded_at?: string | null
+          user_id?: string
+          zone_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_updates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_updates_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presence: {
         Row: {
+          device_id: string | null
           entered_at: string
+          exited_at: string | null
           expires_at: string
           id: string
           user_id: string
           zone_id: string
         }
         Insert: {
+          device_id?: string | null
           entered_at?: string
+          exited_at?: string | null
           expires_at?: string
           id?: string
           user_id: string
           zone_id: string
         }
         Update: {
+          device_id?: string | null
           entered_at?: string
+          exited_at?: string | null
           expires_at?: string
           id?: string
           user_id?: string
@@ -88,9 +212,16 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "presence_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "devices"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "presence_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -391,10 +522,21 @@ export type Database = {
         | { Args: { schema_name: string; table_name: string }; Returns: string }
         | { Args: { table_name: string }; Returns: string }
       enablelongtransactions: { Args: never; Returns: string }
+      enter_zone: {
+        Args: { p_device_id: string; p_user_id: string; p_zone_id: string }
+        Returns: boolean
+      }
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
-      enter_zone: { Args: { p_zone_id: string }; Returns: undefined }
-      exit_zone: { Args: Record<PropertyKey, never>; Returns: undefined }
-      expire_stale_presence: { Args: Record<PropertyKey, never>; Returns: undefined }
+      exit_zone: {
+        Args: { p_device_id: string; p_user_id: string }
+        Returns: undefined
+      }
+      expire_stale_presence: { Args: never; Returns: undefined }
+      generate_device_token: { Args: never; Returns: string }
+      generate_zone_geofences: {
+        Args: { p_boundary: Json; p_zone_id: string }
+        Returns: undefined
+      }
       geometry: { Args: { "": string }; Returns: unknown }
       geometry_above: {
         Args: { geom1: unknown; geom2: unknown }
@@ -565,6 +707,16 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      register_device: {
+        Args: {
+          p_device_id?: string
+          p_expo_push_token?: string
+          p_locale?: string
+          p_platform: string
+        }
+        Returns: Json
+      }
+      revoke_device_token: { Args: { p_token: string }; Returns: undefined }
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown }
         Returns: unknown
@@ -1146,7 +1298,16 @@ export type Database = {
         Args: { geom: unknown; move: number; wrap: number }
         Returns: unknown
       }
+      subdivide_zone_geofence: {
+        Args: { p_depth: number; p_geom: unknown; p_zone_id: string }
+        Returns: undefined
+      }
       unlockrows: { Args: { "": string }; Returns: number }
+      unregister_device: { Args: { p_device_id: string }; Returns: undefined }
+      update_zone_live_activity_token: {
+        Args: { p_device_id: string; p_token: string }
+        Returns: undefined
+      }
       updategeometrysrid: {
         Args: {
           catalogn_name: string

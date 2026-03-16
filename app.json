@@ -62,6 +62,14 @@
         {
           "RNMapboxMapsVersion": "11.18.2"
         }
+      ],
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "app.szpont.widgets",
+          "groupIdentifier": "group.app.szpont",
+          "enablePushNotifications": true
+        }
       ]
     ],
     "experiments": {

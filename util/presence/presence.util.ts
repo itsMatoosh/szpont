@@ -64,22 +64,44 @@ export async function getZonesPresenceCounts(
 
 // ── Mutations ──────────────────────────────────────────────────────────────────
 
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+
 /**
- * Atomically records the user as present in a zone. If the user already has
- * a presence in a *different* zone it is removed first (a user can only be
- * in one zone at a time). If already present in the *same* zone this is a
- * no-op. Runs entirely inside a single Postgres function.
+ * Records the user as present in a zone via the `enter-zone` Edge Function.
+ * Uses the device's `backgroundSecret` for auth so the call succeeds even
+ * when the Supabase JWT has expired in the background.
  */
-export async function enterZone(zoneId: string): Promise<void> {
-  const { error } = await supabase.rpc('enter_zone', { p_zone_id: zoneId });
-  if (error) throw error;
+export async function enterZone(zoneId: string, backgroundSecret: string): Promise<void> {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/enter-zone`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Device-Token': backgroundSecret,
+    },
+    body: JSON.stringify({ zone_id: zoneId }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`enter-zone failed (${res.status}): ${body}`);
+  }
 }
 
 /**
- * Atomically deletes the calling user's presence row.
- * No-op if the user has no presence.
+ * Deletes the calling device's presence row via the `exit-zone` Edge
+ * Function. Only the presence belonging to this device is cleared.
  */
-export async function exitZone(): Promise<void> {
-  const { error } = await supabase.rpc('exit_zone');
-  if (error) throw error;
+export async function exitZone(backgroundSecret: string): Promise<void> {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/exit-zone`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Device-Token': backgroundSecret,
+    },
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`exit-zone failed (${res.status}): ${body}`);
+  }
 }

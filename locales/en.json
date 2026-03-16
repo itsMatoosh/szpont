@@ -37,11 +37,8 @@
     "continue": "Continue",
     "back": "Back"
   },
-  "notifications": {
-    "zoneEntryTitle": "You're in {{zoneName}}",
-    "zoneEntryBody": "Welcome to the zone!",
-    "zoneExitTitle": "You left {{zoneName}}",
-    "zoneExitBody": "See you next time!"
+  "liveActivity": {
+    "hint": "❤️ Beware! People you liked may approach you here."
   },
   "locationGate": {
     "foregroundTitle": "Enable Location",

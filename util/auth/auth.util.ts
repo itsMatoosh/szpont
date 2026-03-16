@@ -2,6 +2,8 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 
+import { getBackgroundLocationAdapter } from '@/util/background-location/background-location.adapter';
+import { unregisterDevice } from '@/util/device/device.util';
 import { supabase } from '@/util/supabase/supabase.util';
 
 /**
@@ -87,8 +89,11 @@ export async function signInWithApple() {
   if (error) throw error;
 }
 
-/** Signs the current user out and clears the local Supabase session. */
+/** Signs the current user out, stops background tracking, unregisters the device, and clears the local Supabase session. */
 export async function signOut() {
+  await getBackgroundLocationAdapter().stop().catch(() => {});
+  await unregisterDevice().catch(() => {});
+
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }

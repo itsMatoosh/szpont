@@ -9,8 +9,9 @@
  * its polygon boundary. The task tracks which individual geofences are
  * active and manages zone presence accordingly:
  *
- * - Enter: first geofence for a zone → `enterZone` + notification
- * - Exit: last geofence for a zone → `exitZone` + notification
+ * - Enter: first geofence for a zone → `enterZone` (Live Activity started
+ *   server-side via a Postgres trigger on the `presence` table)
+ * - Exit: last geofence for a zone → `exitZone` + local Live Activity end
  *
  * **Important:** `TaskManager.defineTask` calls MUST live at module scope —
  * they are executed once when the JS bundle loads, which happens both in the
@@ -22,10 +23,9 @@ import 'expo-sqlite/localStorage/install';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 
-import {
-  showZoneEntryNotification,
-  showZoneExitNotification,
-} from '@/util/notifications/notifications.util';
+import { getBackgroundLocationAdapter } from '@/util/background-location/background-location.adapter';
+import { getBackgroundSecret } from '@/util/device/device.util';
+import { endZoneLiveActivity } from '@/util/live-activity/live-activity.util';
 import { enterZone, exitZone } from '@/util/presence/presence.util';
 
 // ── Task names ─────────────────────────────────────────────────────────────────
@@ -36,7 +36,6 @@ export const GEOFENCE_TASK = 'szpont-geofence-task';
 
 const ACTIVE_GEOFENCES_KEY = 'geofencing:activeGeofences';
 const ZONE_NAMES_KEY = 'geofencing:zoneNames';
-const LAST_NOTIFIED_ZONE_KEY = 'geofencing:lastNotifiedZone';
 
 // ── Helpers for persisted state ────────────────────────────────────────────────
 
@@ -61,7 +60,7 @@ function setActiveGeofences(map: Record<string, string>): void {
 
 /**
  * Zone names are cached so background tasks can include the human-readable
- * name in notifications without a network call.
+ * name in the Live Activity without a network call.
  */
 function getCachedZoneNames(): Record<string, string> {
   try {
@@ -72,31 +71,15 @@ function getCachedZoneNames(): Record<string, string> {
   }
 }
 
-/** Persists a zoneId → name map for background notification copy. */
+/** Persists a zoneId → name map so background tasks can display zone names. */
 export function setCachedZoneNames(names: Record<string, string>): void {
   localStorage.setItem(ZONE_NAMES_KEY, JSON.stringify(names));
-}
-
-/** Returns the zone id we last showed a notification for (avoids duplicates). */
-function getLastNotifiedZone(): string | null {
-  return localStorage.getItem(LAST_NOTIFIED_ZONE_KEY);
-}
-
-/** Records the zone id that was last notified about. */
-function setLastNotifiedZone(zoneId: string): void {
-  localStorage.setItem(LAST_NOTIFIED_ZONE_KEY, zoneId);
-}
-
-/** Clears the last-notified-zone tracker (e.g. after an exit notification). */
-function clearLastNotifiedZone(): void {
-  localStorage.removeItem(LAST_NOTIFIED_ZONE_KEY);
 }
 
 /** Removes all persisted geofencing state (used on city change / cleanup). */
 export function clearGeofencingState(): void {
   localStorage.removeItem(ACTIVE_GEOFENCES_KEY);
   localStorage.removeItem(ZONE_NAMES_KEY);
-  localStorage.removeItem(LAST_NOTIFIED_ZONE_KEY);
   refreshActiveZone();
 }
 
@@ -173,22 +156,24 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
     setActiveGeofences(active);
 
     try {
-      await enterZone(zoneId);
+      const secret = getBackgroundSecret();
+      if (!secret) {
+        console.warn('[GeofenceTask] no background secret — skipping enter');
+        return;
+      }
 
-      // Only notify on the first geofence entry for this zone
+      // Mark the user as being in the zone (triggers server-side Live
+      // Activity start via the pg_net trigger on the presence table)
+      await enterZone(zoneId, secret);
+
+      // Only start BG location on the first geofence entry for this zone
       if (!wasInZone) {
-        const lastNotified = getLastNotifiedZone();
-
-        // If the user walked directly from another zone, send an exit
-        // notification for the previous zone first
-        if (lastNotified && lastNotified !== zoneId) {
-          const prevName = names[lastNotified] ?? lastNotified;
-          await showZoneExitNotification(prevName);
-        }
-
-        const name = names[zoneId] ?? zoneId;
-        await showZoneEntryNotification(name);
-        setLastNotifiedZone(zoneId);
+        const adapter = getBackgroundLocationAdapter();
+        await adapter.setConfig({
+          extras: { zone_id: zoneId },
+          headers: { 'X-Device-Token': secret },
+        });
+        await adapter.start();
       }
     } catch (e) {
       console.warn('[GeofenceTask] failed to enter zone:', e);
@@ -204,14 +189,19 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
 
     if (!stillInZone) {
       try {
-        await exitZone();
+        // Stop background location tracking — no longer in any zone
+        await getBackgroundLocationAdapter().stop();
 
-        const lastNotified = getLastNotifiedZone();
-        if (lastNotified === zoneId) {
-          const name = names[zoneId] ?? zoneId;
-          await showZoneExitNotification(name);
-          clearLastNotifiedZone();
+        // Mark the user as being outside the zone
+        const secret = getBackgroundSecret();
+        if (!secret) {
+          console.warn('[GeofenceTask] no background secret — skipping exit');
+          return;
         }
+        await exitZone(secret);
+
+        // End the Live Activity
+        await endZoneLiveActivity();
       } catch (e) {
         console.warn('[GeofenceTask] failed to exit zone:', e);
       }

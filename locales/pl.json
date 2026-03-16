@@ -38,11 +38,8 @@
     "continue": "Kontynuuj",
     "back": "Wróć"
   },
-  "notifications": {
-    "zoneEntryTitle": "Jesteś w {{zoneName}}",
-    "zoneEntryBody": "Witaj w strefie!",
-    "zoneExitTitle": "Opuściłeś/aś {{zoneName}}",
-    "zoneExitBody": "Do zobaczenia następnym razem!"
+  "liveActivity": {
+    "hint": "❤️ Uwaga! Osoby, które polubiłeś, mogą tu do Ciebie zagadać."
   },
   "locationGate": {
     "foregroundTitle": "Włącz lokalizację",
