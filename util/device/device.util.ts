@@ -39,6 +39,7 @@ export async function registerDevice(): Promise<void> {
     p_platform: Platform.OS,
     p_locale: i18n.language,
     p_device_id: cachedDeviceId ?? undefined,
+    p_is_sandbox: __DEV__,
   });
 
   if (error) throw error;

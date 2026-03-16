@@ -85,6 +85,7 @@ export function useNotificationsSetup(deviceId: string | null): boolean {
           p_locale: i18n.language,
           p_device_id: deviceId ?? undefined,
           p_expo_push_token: token,
+          p_is_sandbox: __DEV__,
         });
 
         if (error) console.warn('[useNotificationsSetup] failed to sync push token:', error);
@@ -107,6 +108,7 @@ export function useNotificationsSetup(deviceId: string | null): boolean {
           p_locale: i18n.language,
           p_device_id: deviceId ?? undefined,
           p_expo_push_token: newToken,
+          p_is_sandbox: __DEV__,
         })
         .then(({ error }) => {
           if (error) console.warn('[useNotificationsSetup] failed to update push token:', error);

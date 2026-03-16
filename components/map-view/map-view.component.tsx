@@ -117,25 +117,6 @@ export function MapView() {
     setTabBarHidden(displayMode.mode === 'zone' || displayMode.mode === 'zone-active');
   }, [displayMode.mode, setTabBarHidden]);
 
-  // ── City-change effect ───────────────────────────────────────────────────
-  // When the resolved city changes, reset to city overview or follow-user.
-  // This also clears a selected zone if the user walks out of the city.
-
-  const prevCityIdRef = useRef(city?.id);
-
-  useEffect(() => {
-    const prev = prevCityIdRef.current;
-    prevCityIdRef.current = city?.id;
-    if (city?.id === prev) return;
-
-    // Don't override zone-active — it is controlled by the active-zone effect
-    setCameraMode((current) =>
-      current.mode === 'zone-active'
-        ? current
-        : city ? { mode: 'city' } : { mode: 'follow-user' },
-    );
-  }, [city]);
-
   // ── Derived camera values ────────────────────────────────────────────────
 
   const activeZone =
@@ -195,6 +176,37 @@ export function MapView() {
     };
   }, [zones]);
 
+  // ── City-change effect ────────────────────────────────────────────────────
+  // Transitions to city mode when the resolved city changes AND zone data
+  // is ready (cityCamera defined). Stays on follow-user while zones are
+  // still loading to avoid a native race between the Camera's
+  // followUserLocation prop and an imperative setCamera call.
+
+  const prevCityIdRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    const prev = prevCityIdRef.current;
+    prevCityIdRef.current = city?.id;
+
+    if (city?.id !== prev) {
+      // City changed — transition immediately if zone data is ready,
+      // otherwise fall back to follow-user until the next run.
+      setCameraMode((current) => {
+        if (current.mode === 'zone-active') return current;
+        if (!city) return { mode: 'follow-user' };
+        return cityCamera ? { mode: 'city' } : { mode: 'follow-user' };
+      });
+      return;
+    }
+
+    // City unchanged but zone data may have just finished loading.
+    if (cityCamera && city) {
+      setCameraMode((current) =>
+        current.mode === 'follow-user' ? { mode: 'city' } : current,
+      );
+    }
+  }, [city, cityCamera]);
+
   /** Center, zoom, and optional slide endpoints derived from the active zone's oriented envelope. */
   const zoneCamera = useMemo(() => {
     if (!activeZone) return undefined;
@@ -212,7 +224,6 @@ export function MapView() {
     let slideEndpoints: { start: [number, number]; end: [number, number] } | null = null;
 
     if (aspect >= SLIDE_ASPECT_THRESHOLD) {
-      // Inset from the full major-axis endpoints toward center
       slideEndpoints = {
         start: [
           center[0] + (majorStart[0] - center[0]) * SLIDE_INSET,
@@ -229,11 +240,10 @@ export function MapView() {
   }, [activeZone]);
 
   // ── Camera effect ────────────────────────────────────────────────────────
-  // Single effect that reads cameraMode and applies the right camera
-  // behaviour: follow-user is handled by the Camera prop; city and zone
-  // use imperative setCamera calls.
+  // follow-user and city modes are handled declaratively via Camera props.
+  // zone and zone-active use imperative setCamera calls.
 
-  // Bottom padding pushes the focal point up so it isn't hidden behind the info card.
+  /** Bottom padding pushes the focal point up so it isn't hidden behind the info card. */
   const zoneCameraPadding = useMemo(
     () => ({
       paddingTop: 0,
@@ -244,26 +254,9 @@ export function MapView() {
     [insets.bottom],
   );
 
-  // Camera positioning for each mode. follow-user is handled declaratively
-  // by the Camera prop; the rest use imperative setCamera calls.
   useEffect(() => {
-    if (cameraMode.mode === 'follow-user') {
+    if (cameraMode.mode === 'follow-user' || cameraMode.mode === 'city') {
       headingRef.current = 0;
-      return;
-    }
-
-    if (cameraMode.mode === 'city') {
-      headingRef.current = 0;
-      if (!cityCamera) return;
-
-      cameraRef.current?.setCamera({
-        centerCoordinate: cityCamera.center,
-        zoomLevel: cityCamera.zoom,
-        pitch: 0,
-        heading: 0,
-        animationDuration: FLYTO_DURATION_MS,
-        animationMode: 'flyTo',
-      });
       return;
     }
 
@@ -290,7 +283,6 @@ export function MapView() {
           });
         })
         .catch(() => {
-          // Permission denied or unavailable — fall back to zone center.
           cameraRef.current?.setCamera({
             centerCoordinate: zoneCenter,
             zoomLevel: MIN_ZONE_ZOOM,
@@ -358,7 +350,7 @@ export function MapView() {
       clearTimeout(timeout);
       if (intervalId) clearInterval(intervalId);
     };
-  }, [cameraMode, cityCamera, zoneCamera, zoneActiveCamera, zoneCameraPadding]);
+  }, [cameraMode, zoneCamera, zoneActiveCamera, zoneCameraPadding]);
 
   // ── Zone markers (city view) ─────────────────────────────────────────────
 
@@ -432,7 +424,6 @@ export function MapView() {
   /** Animated style applied to each marker wrapper so they fade in/out with the flyTo. */
   const markerAnimatedStyle = useAnimatedStyle(() => ({
     opacity: markerOpacity.value,
-    // Prevent phantom taps on invisible markers
     pointerEvents: markerOpacity.value === 0 ? 'none' : 'auto',
   }));
 
@@ -489,10 +480,17 @@ export function MapView() {
         compassEnabled={false}
         scaleBarEnabled={false}
       >
+        {/* City framing uses declarative Camera props so followUserLocation
+            and centerCoordinate arrive as a single atomic native update,
+            avoiding a race between the prop change and imperative setCamera. */}
         <Mapbox.Camera
           ref={cameraRef}
           followUserLocation={cameraMode.mode === 'follow-user'}
           followZoomLevel={12}
+          centerCoordinate={cameraMode.mode === 'city' && cityCamera ? cityCamera.center : undefined}
+          zoomLevel={cameraMode.mode === 'city' && cityCamera ? cityCamera.zoom : undefined}
+          pitch={cameraMode.mode === 'city' ? 0 : undefined}
+          heading={cameraMode.mode === 'city' ? 0 : undefined}
           animationMode="flyTo"
           animationDuration={FLYTO_DURATION_MS}
         />

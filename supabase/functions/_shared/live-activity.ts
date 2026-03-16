@@ -17,7 +17,8 @@ const APNS_KEY_ID = Deno.env.get('APNS_KEY_ID')!;
 const APNS_TEAM_ID = Deno.env.get('APNS_TEAM_ID')!;
 const APNS_AUTH_KEY_B64 = Deno.env.get('APNS_AUTH_KEY')!;
 
-const APNS_HOST = 'https://api.push.apple.com';
+const APNS_HOST_PROD = 'https://api.push.apple.com';
+const APNS_HOST_SANDBOX = 'https://api.sandbox.push.apple.com';
 const APNS_TOPIC = 'app.szpont.push-type.liveactivity';
 
 /** Hardcoded hint translations — avoids pulling in i18n on the server. */
@@ -89,10 +90,10 @@ export async function startZoneLiveActivity(
   deviceId: string,
 ): Promise<void> {
   try {
-    // Look up device token + locale
+    // Look up device token, locale, and sandbox flag
     const { data: device, error: deviceErr } = await supabase
       .from('devices')
-      .select('zone_live_activity_token, locale')
+      .select('zone_live_activity_token, locale, is_sandbox')
       .eq('id', deviceId)
       .maybeSingle();
 
@@ -120,7 +121,9 @@ export async function startZoneLiveActivity(
     };
 
     const jwt = await createApnsJwt();
-    const apnsUrl = `${APNS_HOST}/3/device/${device.zone_live_activity_token}`;
+    // Dev builds register with APNs sandbox; their tokens only work there
+    const apnsHost = device.is_sandbox ? APNS_HOST_SANDBOX : APNS_HOST_PROD;
+    const apnsUrl = `${apnsHost}/3/device/${device.zone_live_activity_token}`;
 
     const apnsRes = await fetch(apnsUrl, {
       method: 'POST',
