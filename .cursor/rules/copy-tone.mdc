@@ -1,0 +1,46 @@
+---
+description: Enforces lowercase for titles/subtitles and gen-z coded copy for user-facing strings and translation files
+globs: locales/*.json
+alwaysApply: false
+---
+
+# Copy Tone — Lowercase Titles/Subtitles & Gen-Z Messaging
+
+User-facing text follows a casual, gen-z coded tone. Lowercase applies only to title and subtitle copy.
+
+## Rules
+
+- **Lowercase for titles and subtitles only** — screen titles, section titles, and subtitles must be lowercase. No title case, no sentence case for these.
+- **Other copy** — buttons, CTAs, labels, and body copy are not required to be lowercase; use whatever casing fits the context.
+- **Casual and friendly** — write like you're texting a friend, not drafting a corporate email.
+- **Proper nouns keep casing** — brand names (Szpont, Google, Apple, Android) and abbreviations (DD, MM) retain their original casing.
+- **No exclamation inflation** — one exclamation mark max per screen; prefer periods or no punctuation on short labels.
+
+## Common translation block
+
+Shared, repeated labels (continue, back, etc.) live in the top-level `"common"` block in the locale JSON files so they aren't duplicated across feature blocks.
+
+```json
+"common": {
+  "continue": "continue",
+  "back": "back"
+}
+```
+
+Reference them as `t('common.continue')`, `t('common.back')`, etc.
+
+Before adding a new label to a feature block, check whether `common` already has it.
+
+## Examples (titles & subtitles)
+
+```
+"welcome"           ✅
+"Welcome"           ❌
+"let's go"          ✅
+"Let's Go"          ❌
+"get started"       ✅
+"Get Started"       ❌
+"open settings"     ✅
+"Open Settings"     ❌
+"sign in with Google" ✅  (title/subtitle)
+```

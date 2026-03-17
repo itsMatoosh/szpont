@@ -85,8 +85,8 @@ function PermissionCheckRow({
 
 // ── Slide component ─────────────────────────────────────────────────────
 
-/** Slide 6 — location permissions: privacy card + interactive permission checklist with pulse on the next action. */
-export function SlidePermissions() {
+/** Slide 7 — location permissions: privacy card + interactive permission checklist with pulse on the next action. */
+export function SlideLocation() {
   const { t } = useTranslation();
   const isLight = useColorScheme() === 'light';
 

@@ -1,4 +1,8 @@
 {
+  "common": {
+    "continue": "dalej",
+    "back": "wróć"
+  },
   "tabs": {
     "map": "Mapa",
     "profile": "Profil"
@@ -14,7 +18,6 @@
     "friends": "Znajomi"
   },
   "auth": {
-    "subtitle": "widzimy się na mieście ;)",
     "signInWithGoogle": "Zaloguj się przez Google",
     "signInWithApple": "Zaloguj się przez Apple",
     "signInFailed": "Logowanie nie powiodło się",
@@ -27,33 +30,37 @@
     "presenceCount_many": "{{count}} osób"
   },
   "onboarding": {
-    "nameTitle": "Jak masz na imię?",
+    "nameTitle": "jak masz na imię?",
     "namePlaceholder": "Twoje imię",
-    "usernameTitle": "Wybierz nazwę użytkownika",
+    "usernameTitle": "wybierz nazwę użytkownika",
     "usernamePlaceholder": "nazwa_użytkownika",
-    "dobTitle": "Podaj swoją datę urodzenia",
+    "dobTitle": "podaj swoją datę urodzenia",
     "dobDay": "DD",
     "dobMonth": "MM",
     "dobYear": "RRRR",
-    "continue": "Kontynuuj",
-    "back": "Wróć"
+    "creatingProfile": "tworzenie profilu",
+    "createProfile": "utwórz profil",
+    "errors": {
+      "displayNameMinLength": "imię musi mieć co najmniej 3 znaki",
+      "displayNameLettersOnly": "imię może zawierać tylko litery",
+      "usernameMinLength": "nazwa użytkownika musi mieć co najmniej 3 znaki",
+      "usernameMaxLength": "nazwa użytkownika musi mieć 3–30 znaków",
+      "usernameInvalidChars": "nazwa użytkownika może zawierać tylko litery, cyfry, kropki i podkreślniki.",
+      "usernameNoLeadingPeriod": "nazwa użytkownika nie może zaczynać się od kropki.",
+      "usernameNoTrailingPeriod": "nazwa użytkownika nie może kończyć się kropką.",
+      "usernameNoConsecutiveDots": "nazwa użytkownika nie może zawierać dwóch kropek z rzędu.",
+      "dobDayLength": "dzień musi mieć 2 cyfry",
+      "dobMonthLength": "miesiąc musi mieć 2 cyfry",
+      "dobYearLength": "rok musi mieć 4 cyfry",
+      "dobInvalidDate": "podaj prawidłową datę",
+      "dobMinAge": "musisz mieć co najmniej {{age}} lat, żeby korzystać ze Szpontu",
+      "dobMaxAge": "musisz mieć co najwyżej {{age}} lat, żeby korzystać ze Szpontu"
+    }
   },
   "liveActivity": {
     "hint": "❤️ Uwaga! Osoby, które polubiłeś, mogą tu do Ciebie zagadać."
   },
-  "locationGate": {
-    "foregroundTitle": "Włącz lokalizację",
-    "foregroundMessage": "Potrzebujemy Twojej lokalizacji, aby pokazać Ci strefy Szpontu w pobliżu.",
-    "backgroundTitle": "Włącz lokalizację w tle",
-    "backgroundMessage": "Używamy lokalizacji w tle, żeby wykryć kiedy jesteś w strefie Szpontu.",
-    "grant": "Kontynuuj",
-    "openSettings": "Otwórz ustawienia",
-    "restricted": "Dostęp do lokalizacji jest ograniczony na tym urządzeniu."
-  },
   "welcome": {
-    "skip": "pomiń",
-    "continue": "dalej",
-    "cta": "zaczynamy",
     "slide1TitleBefore": "wyjścia na miasto są lepsze kiedy ",
     "slide1TitleAccent": "poznajesz nowych ludzi",
     "slide2TitleBefore": "znajdź ",
@@ -68,6 +75,10 @@
     "slide5TitleBefore": "nie bój się zagadać, masz ",
     "slide5TitleAccent": "zielone światło",
     "slide5Subtitle": "na mapie są widoczne tylko osoby, które już wysłały Ci lajka. chętnie się z tobą poznają!",
+    "slideNotifTitleBefore": "wiedz, kiedy ",
+    "slideNotifTitleAccent": "twoja ekipa",
+    "slideNotifTitleAfter": " wychodzi",
+    "slideNotifSubtitle": "wyślemy ci powiadomienie, kiedy ktoś z twojej ekipy pojawi się w strefie spotkań.",
     "slide6TitleBefore": "żeby działać, potrzebujemy twojej ",
     "slide6TitleAccent": "lokalizacji",
     "slide6Privacy": "Przetwarzamy twoją lokalizację tylko gdy jesteś w jednej z aktywnych stref spotkań. Twoje dane są prywatne.",

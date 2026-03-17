@@ -1,4 +1,8 @@
 {
+  "common": {
+    "continue": "continue",
+    "back": "back"
+  },
   "tabs": {
     "map": "Map",
     "profile": "Profile"
@@ -14,7 +18,6 @@
     "friends": "Friends"
   },
   "auth": {
-    "subtitle": "see you outside ;)",
     "signInWithGoogle": "Sign in with Google",
     "signInWithApple": "Sign in with Apple",
     "signInFailed": "Sign-in failed",
@@ -26,33 +29,37 @@
     "presenceCount_other": "{{count}} people"
   },
   "onboarding": {
-    "nameTitle": "What's your name?",
-    "namePlaceholder": "Your name",
-    "usernameTitle": "Pick a username",
+    "nameTitle": "what's your name?",
+    "namePlaceholder": "your name",
+    "usernameTitle": "pick a username",
     "usernamePlaceholder": "username",
-    "dobTitle": "Enter your date of birth",
+    "dobTitle": "enter your date of birth",
     "dobDay": "DD",
     "dobMonth": "MM",
     "dobYear": "YYYY",
-    "continue": "Continue",
-    "back": "Back"
+    "creatingProfile": "creating your profile",
+    "createProfile": "create profile",
+    "errors": {
+      "displayNameMinLength": "display name must be at least 3 characters",
+      "displayNameLettersOnly": "display name can only contain letters",
+      "usernameMinLength": "username must be at least 3 characters",
+      "usernameMaxLength": "username must be 3–30 characters",
+      "usernameInvalidChars": "username can only contain letters, numbers, periods and underscores.",
+      "usernameNoLeadingPeriod": "username cannot start with a period.",
+      "usernameNoTrailingPeriod": "username cannot end with a period.",
+      "usernameNoConsecutiveDots": "username cannot have consecutive dots.",
+      "dobDayLength": "day must be 2 digits",
+      "dobMonthLength": "month must be 2 digits",
+      "dobYearLength": "year must be 4 digits",
+      "dobInvalidDate": "please enter a valid date",
+      "dobMinAge": "you must be at least {{age}} years old to use Szpont",
+      "dobMaxAge": "you must be at most {{age}} years old to use Szpont"
+    }
   },
   "liveActivity": {
     "hint": "❤️ Beware! People you liked may approach you here."
   },
-  "locationGate": {
-    "foregroundTitle": "Enable Location",
-    "foregroundMessage": "We need your location to show you nearby Szpont zones.",
-    "backgroundTitle": "Enable Background Location",
-    "backgroundMessage": "We use background location to detect when you're in a Szpont zone.",
-    "grant": "Continue",
-    "openSettings": "Open Settings",
-    "restricted": "Location access is restricted on this device."
-  },
   "welcome": {
-    "skip": "skip",
-    "continue": "continue",
-    "cta": "let's go",
     "slide1TitleBefore": "going out is more fun\nwhen you're ",
     "slide1TitleAccent": "meeting new people",
     "slide2TitleBefore": "find ",
@@ -67,6 +74,10 @@
     "slide5TitleBefore": "don't be afraid to say hi, you've got the ",
     "slide5TitleAccent": "green light",
     "slide5Subtitle": "people that you see on the map have already sent you a like. they can't wait to meet you!",
+    "slideNotifTitleBefore": "know when ",
+    "slideNotifTitleAccent": "your squad",
+    "slideNotifTitleAfter": " is out",
+    "slideNotifSubtitle": "we can send you a notification when someone from your squad is in a meetup zone.",
     "slide6TitleBefore": "to play, we need your ",
     "slide6TitleAccent": "location",
     "slide6Privacy": "We only process your location when you're in one of the active meetup zones. Your data stays private.",

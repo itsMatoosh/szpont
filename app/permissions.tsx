@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { SlidePermissions } from '@/components/welcome-slides/slide-permissions.component';
+import { SlideLocation } from '@/components/welcome-slides/slide-location.component';
 
 /**
  * Standalone permissions screen shown by a route guard when the user
@@ -13,7 +13,7 @@ export default function PermissionsScreen() {
 
   return (
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
-      <SlidePermissions />
+      <SlideLocation />
     </View>
   );
 }
