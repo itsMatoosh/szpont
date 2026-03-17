@@ -59,6 +59,8 @@ export const pl = {
   cityMap: {
     suggestButton: 'zaproponuj nową strefę',
     back: 'wróć',
+    activeZones: 'aktywne strefy',
+    suggestedZones: 'proponowane strefy',
   },
 
   suggestZone: {
@@ -76,7 +78,7 @@ export const pl = {
     boundaryLabel: 'granica strefy (GeoJSON)',
     boundaryHelper: 'możesz narysować granicę strefy na',
     boundaryHelperLink: 'geojson.io',
-    boundaryHelperAfter: 'i pobrać plik.',
+    boundaryHelperAfter: 'i eksportować plik.',
     boundaryButton: 'wybierz plik',
     boundaryNone: 'nie wybrano pliku',
     emailLabel: 'twój email',

@@ -141,17 +141,13 @@ function isLinkable(city: City): boolean {
   </div>
 </section>
 
-<style>
+<style is:global>
   @media (prefers-color-scheme: light) {
     .zone-pin {
       stroke: #000;
       stroke-width: 1px;
       paint-order: stroke fill;
     }
-  }
-</style>
-<style is:global>
-  @media (prefers-color-scheme: light) {
     .like-btn:disabled svg {
       stroke: #000;
       stroke-width: 1px;
@@ -181,6 +177,7 @@ function isLinkable(city: City): boolean {
   const FILLED_HEART = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z" /></svg>';
   const OUTLINE_HEART = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>';
   const PIN_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="zone-pin w-4 h-4 text-accent"><path fill-rule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 3.827 3.024ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd" /></svg>';
+  const SUGGESTED_PIN_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="zone-pin w-4 h-4 text-[#FF9500]"><path fill-rule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 3.827 3.024ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd" /></svg>';
 
   const VISITOR_KEY = 'szpont_visitor_id';
 
@@ -347,17 +344,17 @@ function isLinkable(city: City): boolean {
 
         const card = document.createElement(linkable ? 'a' : 'div');
         card.className = 'zone-card flex items-center gap-3 bg-surface border border-border rounded-2xl px-4 py-3 flex-1'
-          + (linkable ? ' hover:border-accent transition-colors group' : '');
+          + (linkable ? ' hover:border-[#FF9500] transition-colors group' : '');
         if (linkable && card instanceof HTMLAnchorElement) {
           card.href = cityHref;
         }
 
         const pinIcon = document.createElement('span');
-        pinIcon.className = 'flex items-center justify-center w-7 h-7 rounded-lg bg-accent/15 shrink-0';
-        pinIcon.innerHTML = PIN_SVG;
+        pinIcon.className = 'flex items-center justify-center w-7 h-7 rounded-lg bg-[#FF9500]/15 shrink-0';
+        pinIcon.innerHTML = SUGGESTED_PIN_SVG;
 
         const nameEl = document.createElement('span');
-        nameEl.className = 'font-semibold text-foreground flex-1' + (linkable ? ' group-hover:text-accent transition-colors' : '');
+        nameEl.className = 'font-semibold text-foreground flex-1' + (linkable ? ' group-hover:text-[#FF9500] transition-colors' : '');
         nameEl.textContent = suggestion.name;
 
         card.appendChild(pinIcon);

@@ -223,6 +223,18 @@ const attendanceOptions = ['< 100', '100–200', '200–500', '500–1000', '100
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   let parsedBoundary: unknown = null;
 
+  /** Unwraps FeatureCollection / Feature wrappers to a bare GeoJSON Geometry. */
+  function resolveGeometry(obj: unknown): unknown {
+    const g = obj as Record<string, unknown>;
+    if (!g || !g.type) return null;
+    if (g.type === 'FeatureCollection') {
+      const features = g.features as Record<string, unknown>[];
+      return features?.length ? (features[0] as Record<string, unknown>).geometry ?? null : null;
+    }
+    if (g.type === 'Feature') return g.geometry ?? null;
+    return obj;
+  }
+
   // Toggle the "other" city text input when the dropdown changes
   citySelect.addEventListener('change', () => {
     if (citySelect.value === '__other__') {
@@ -259,7 +271,10 @@ const attendanceOptions = ['< 100', '100–200', '200–500', '500–1000', '100
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        parsedBoundary = JSON.parse(reader.result as string);
+        const raw = JSON.parse(reader.result as string);
+        // Normalize to a bare Geometry regardless of the uploaded GeoJSON structure
+        parsedBoundary = resolveGeometry(raw);
+        if (!parsedBoundary) throw new Error('no geometry');
         boundaryValid.classList.remove('hidden');
         document.querySelector('.field-error[data-field="zone-boundary"]')?.classList.add('hidden');
       } catch {

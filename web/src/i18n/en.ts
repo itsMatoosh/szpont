@@ -59,6 +59,8 @@ export const en = {
   cityMap: {
     suggestButton: 'suggest a new zone',
     back: 'back',
+    activeZones: 'active zones',
+    suggestedZones: 'suggested zones',
   },
 
   suggestZone: {
