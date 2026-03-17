@@ -35,7 +35,7 @@ export const pl = {
   slide4: {
     titleBefore: 'kiedy wejdziesz do strefy, ',
     titleAccent: 'inni mogą do Ciebie podchodzić',
-    subtitle: 'twoja lokalizacja jest widoczna tylko dla osób, które polubiłeś(aś).',
+    subtitle: 'Twoja lokalizacja jest widoczna tylko dla osób, które polubiłeś(aś).',
   },
 
   slide5: {

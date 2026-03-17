@@ -35,7 +35,7 @@ export const en = {
   slide4: {
     titleBefore: 'when you enter a zone, ',
     titleAccent: 'others can approach you',
-    subtitle: 'your location will only be visible to people you liked.',
+    subtitle: 'Your location will only be visible to people you liked.',
   },
 
   slide5: {
