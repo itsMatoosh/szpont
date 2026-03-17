@@ -79,7 +79,6 @@ if (!city) return Astro.redirect(localePath(locale, '/'));
     suggestions: ZoneEntry[];
   };
 
-
   const ACTIVE_COLOR = '#CCFF00';
   const SUGGESTED_COLOR = '#FF9500';
 
@@ -229,6 +228,8 @@ if (!city) return Astro.redirect(localePath(locale, '/'));
     if (!resolved) return [];
     if (resolved.type === 'Polygon') return (resolved as GeoJSON.Polygon).coordinates.flat();
     if (resolved.type === 'MultiPolygon') return (resolved as GeoJSON.MultiPolygon).coordinates.flat(2);
+    if (resolved.type === 'LineString') return (resolved as GeoJSON.LineString).coordinates;
+    if (resolved.type === 'MultiLineString') return (resolved as GeoJSON.MultiLineString).coordinates.flat();
     if (resolved.type === 'Point') return [(resolved as GeoJSON.Point).coordinates];
     return [];
   }
