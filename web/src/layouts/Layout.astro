@@ -45,5 +45,6 @@ const currentPath = Astro.url.pathname.replace(/^\/pl/, '') || '/';
   </head>
   <body class="bg-background text-foreground min-h-screen font-sans antialiased">
     <slot />
+    <script defer src="/_vercel/insights/script.js"></script>
   </body>
 </html>
