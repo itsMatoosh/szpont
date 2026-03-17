@@ -96,6 +96,8 @@ export const pl = {
     selectOption: 'wybierz opcję.',
   },
 
+  scrollHint: 'przewiń w dół, aby zobaczyć więcej',
+
   footer: {
     joinWaitlist: 'dołącz do listy',
     instagram: 'obserwuj nas na Instagramie @szpont.app',

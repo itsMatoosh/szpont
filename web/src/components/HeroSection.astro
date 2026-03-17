@@ -55,12 +55,12 @@ const { locale } = Astro.props;
     </p>
   </div>
 
-  <!-- Instagram CTA pinned near the bottom of the hero viewport -->
+  <!-- Instagram CTA -->
   <a
     href="https://instagram.com/szpont.app"
     target="_blank"
     rel="noopener noreferrer"
-    class="absolute bottom-6 flex items-center gap-2 text-muted hover:text-foreground text-sm transition-colors"
+    class="absolute bottom-20 flex items-center gap-2 text-muted hover:text-foreground text-sm transition-colors"
   >
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
@@ -69,7 +69,45 @@ const { locale } = Astro.props;
     </svg>
     {t(locale, 'footer.instagram')}
   </a>
+
+  <!-- Animated scroll-down hint with label -->
+  <div class="absolute bottom-6 scroll-hint flex items-center gap-2 text-muted text-sm">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+    <span>{t(locale, 'scrollHint')}</span>
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </div>
 </section>
+
+<style>
+  /* Gentle bounce that slides the chevron up and down */
+  @keyframes bounce-scroll {
+    0%, 100% { transform: translateY(0); opacity: 0.6; }
+    50%      { transform: translateY(6px); opacity: 1; }
+  }
+  .scroll-hint {
+    animation: bounce-scroll 1.8s ease-in-out infinite;
+  }
+</style>
+
+<script>
+  // Fade out the scroll hint once the user starts scrolling
+  const hint = document.querySelector('.scroll-hint') as HTMLElement | null;
+  if (hint) {
+    let hidden = false;
+    window.addEventListener('scroll', () => {
+      if (hidden) return;
+      if (window.scrollY > 80) {
+        hint.style.opacity = '0';
+        hint.style.transition = 'opacity 0.4s ease';
+        hidden = true;
+      }
+    }, { passive: true });
+  }
+</script>
 
 <script>
   import { supabase } from '@/lib/supabase';

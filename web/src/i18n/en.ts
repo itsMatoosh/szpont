@@ -96,6 +96,8 @@ export const en = {
     selectOption: 'select an option.',
   },
 
+  scrollHint: 'scroll down for more',
+
   footer: {
     joinWaitlist: 'join the waitlist',
     instagram: 'follow us on Instagram @szpont.app',
