@@ -224,6 +224,7 @@ export function MapView() {
     let slideEndpoints: { start: [number, number]; end: [number, number] } | null = null;
 
     if (aspect >= SLIDE_ASPECT_THRESHOLD) {
+      // Inset from the full major-axis endpoints toward center
       slideEndpoints = {
         start: [
           center[0] + (majorStart[0] - center[0]) * SLIDE_INSET,

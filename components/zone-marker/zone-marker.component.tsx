@@ -1,7 +1,7 @@
 import RNBounceable from '@freakycoder/react-native-bounceable';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
+import Animated, { type AnimatedStyle } from 'react-native-reanimated';
 
 import type { ResolvedMarker } from '@/components/map-view/map-view.util';
 import Mapbox from '@/util/mapbox/mapbox.util';
@@ -15,7 +15,7 @@ interface ZoneMarkerProps {
   /** Number of users currently present in this zone. */
   presenceCount: number;
   /** Reanimated style controlling opacity during city/zone transitions. */
-  animatedStyle: ReturnType<typeof Animated.useAnimatedStyle>;
+  animatedStyle: AnimatedStyle<ViewStyle>;
   onPress: () => void;
 }
 

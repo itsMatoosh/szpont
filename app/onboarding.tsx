@@ -11,9 +11,13 @@ import { supabase } from '@/util/supabase/supabase.util';
 
 const TOTAL_STEPS = 3;
 
+const nunitoBold = { fontFamily: 'Nunito_700Bold' } as const;
+const nunitoSemiBold = { fontFamily: 'Nunito_600SemiBold' } as const;
+const nunitoRegular = { fontFamily: 'Nunito_400Regular' } as const;
+
 const styles = StyleSheet.create({
-  inputBase: { fontSize: 24, textAlign: 'center' as const },
-  inputLarge: { fontSize: 30, fontWeight: 'bold', textAlign: 'center' as const },
+  inputBase: { fontSize: 24, textAlign: 'center' as const, fontFamily: 'Nunito_400Regular' },
+  inputLarge: { fontSize: 30, textAlign: 'center' as const, fontFamily: 'Nunito_700Bold' },
 });
 
 /** Multi-step onboarding wizard collecting display name, username, and date of birth. */
@@ -120,7 +124,7 @@ export default function OnboardingScreen() {
         <View style={{ flex: 1 }} className="px-8 justify-center items-center">
           {step === 0 && (
             <>
-              <Text className="text-3xl font-bold text-foreground mb-6 text-center">
+              <Text className="text-3xl font-bold text-foreground mb-6 text-center" style={nunitoBold}>
                 {t('onboarding.nameTitle')}
               </Text>
               <View className="border-b-2 border-border pb-2 self-stretch">
@@ -141,11 +145,11 @@ export default function OnboardingScreen() {
 
           {step === 1 && (
             <>
-              <Text className="text-3xl font-bold text-foreground mb-6 text-center">
+              <Text className="text-3xl font-bold text-foreground mb-6 text-center" style={nunitoBold}>
                 {t('onboarding.usernameTitle')}
               </Text>
               <View className="flex-row items-center border-b-2 border-border pb-2 self-stretch justify-center">
-                <Text className="text-2xl text-muted">@</Text>
+                <Text className="text-2xl text-muted" style={nunitoRegular}>@</Text>
                 <TextInput
                   style={[styles.inputBase, { flex: 1, color: foreground }]}
                   placeholder={t('onboarding.usernamePlaceholder')}
@@ -164,7 +168,7 @@ export default function OnboardingScreen() {
 
           {step === 2 && (
             <>
-              <Text className="text-3xl font-bold text-foreground mb-6 text-center">
+              <Text className="text-3xl font-bold text-foreground mb-6 text-center" style={nunitoBold}>
                 {t('onboarding.dobTitle')}
               </Text>
               <View className="flex-row gap-3 justify-center">
@@ -221,6 +225,7 @@ export default function OnboardingScreen() {
                 className={`text-lg font-semibold ${
                   canContinue && !submitting ? 'text-on-accent' : 'text-muted'
                 }`}
+                style={nunitoSemiBold}
               >
                 {t('onboarding.continue')}
               </Text>

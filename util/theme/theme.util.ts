@@ -10,6 +10,7 @@ export const Colors = {
     onAccent: '#262626',
     muted: '#8E8E8E',
     border: '#DBDBDB',
+    highlight: '#ECECEC',
   },
   dark: {
     background: '#000000',
@@ -21,5 +22,6 @@ export const Colors = {
     onAccent: '#262626',
     muted: '#8E8E8E',
     border: '#262626',
+    highlight: '#2A2A2A',
   },
 } as const;

@@ -39,6 +39,7 @@
     },
     "owner": "vybe-social",
     "plugins": [
+      "expo-font",
       "expo-sqlite",
       "expo-router",
       "expo-system-ui",

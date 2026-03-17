@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { useEffect, useRef } from 'react';
 
+import { getBackgroundSecret } from '@/util/device/device.util';
 import { getGeofencesByCity } from '@/util/geofences/geofences.util';
 import {
   clearGeofencingState,
@@ -86,7 +87,8 @@ async function teardown(): Promise<void> {
   }
 
   try {
-    await exitZone();
+    const secret = getBackgroundSecret();
+    if (secret) await exitZone(secret);
   } catch {
     // No active presence or network error — safe to ignore
   }

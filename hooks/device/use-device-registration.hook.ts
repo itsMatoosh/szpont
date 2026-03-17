@@ -28,6 +28,8 @@ export function useDeviceRegistration(userId: string | null): DeviceRegistration
 
   useEffect(() => {
     if (!userId) {
+      setDeviceId(null);
+      setBackgroundSecret(null);
       setIsReady(true);
       return;
     }

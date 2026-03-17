@@ -48,7 +48,7 @@ export default function LoginScreen() {
           contentFit="contain"
           style={{ width: '100%', aspectRatio: 2642 / 512 }}
         />
-        <Text className="text-white text-lg font-bold mt-2 tracking-wider">
+        <Text className="text-white text-lg font-bold mt-2 tracking-wider" style={{ fontFamily: 'Nunito_700Bold' }}>
           {t('auth.subtitle')}
         </Text>
       </View>

@@ -5,9 +5,11 @@ import '@/util/i18n/i18n.util';
 import '@/util/geofencing/geofencing.util';
 import '@/util/background-location/expo-background-task.util';
 
+import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold } from '@expo-google-fonts/nunito';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Asset } from 'expo-asset';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
@@ -22,6 +24,7 @@ import {
   type LocationPermissionSnapshot,
   preloadLocationPermissions,
 } from '@/hooks/location/location-permission.context';
+import { useLocationPermissionsComplete } from '@/hooks/location/use-location-permissions-complete.hook';
 import {
   NotificationPermissionProvider,
   type NotificationPermissionSnapshot,
@@ -29,7 +32,9 @@ import {
 } from '@/hooks/notifications/notification-permission.context';
 import { useNotificationsSetup } from '@/hooks/notifications/use-notifications-setup.hook';
 import { ProfileProvider, useProfileContext } from '@/hooks/profile/profile.context';
+import { WelcomeProvider, useWelcome } from '@/hooks/welcome/welcome.context';
 
+import { Loader } from '@/components/loader/loader.component';
 import { Colors } from '@/util/theme/theme.util';
 
 // Keep the native splash visible until we explicitly hide it
@@ -50,6 +55,7 @@ const darkTheme = {
 /** Root layout: provides theme, query client, profile context, and blocks rendering while resolving. */
 export default function RootLayout() {
   const scheme = useColorScheme();
+  const [fontsLoaded] = useFonts({ Nunito_700Bold, Nunito_600SemiBold, Nunito_400Regular });
   const { session, user, isLoading } = useAuth();
 
   // Preload permission snapshots so providers start with real values
@@ -61,7 +67,7 @@ export default function RootLayout() {
     preloadNotificationPermissions().then(setNotificationSnapshot);
   }, []);
 
-  // Only preload the intro video once we know the user is unauthenticated
+  // Start preloading the intro video as soon as we know the user is unauthenticated
   const [introVideoPreloaded, setIntroVideoPreloaded] = useState(false);
   useEffect(() => {
     if (isLoading || session) return;
@@ -70,8 +76,11 @@ export default function RootLayout() {
     );
   }, [isLoading, session]);
 
-  // Providers need complete data — keep rendering blocked until ready
-  if (isLoading || !locationSnapshot || !notificationSnapshot || (!session && !introVideoPreloaded)) return null;
+  // Providers need complete data — keep rendering blocked until ready.
+  // Video gate applies when the user is unauthenticated (login is the only pre-auth screen).
+  const needsVideoGate = !session && !introVideoPreloaded;
+
+  if (isLoading || !fontsLoaded || !locationSnapshot || !notificationSnapshot || needsVideoGate) return <Loader />;
 
   return (
     <ThemeProvider value={scheme === 'dark' ? darkTheme : lightTheme}>
@@ -80,7 +89,9 @@ export default function RootLayout() {
           <LocationPermissionProvider initialSnapshot={locationSnapshot}>
             <NotificationPermissionProvider initialSnapshot={notificationSnapshot}>
               <CurrentLocationProvider>
-                <RootNavigator session={session} userId={user?.id ?? null} />
+                <WelcomeProvider>
+                  <RootNavigator session={session} userId={user?.id ?? null} />
+                </WelcomeProvider>
               </CurrentLocationProvider>
             </NotificationPermissionProvider>
           </LocationPermissionProvider>
@@ -97,6 +108,8 @@ export default function RootLayout() {
  */
 function RootNavigator({ session, userId }: { session: unknown; userId: string | null }) {
   const { profile, isLoading: profileLoading } = useProfileContext();
+  const { hasSeenWelcome } = useWelcome();
+  const locationReady = useLocationPermissionsComplete();
 
   // Always called (React rules of hooks); no-ops when inputs are null
   const { deviceId, backgroundSecret, isReady: deviceReady } = useDeviceRegistration(userId);
@@ -104,11 +117,13 @@ function RootNavigator({ session, userId }: { session: unknown; userId: string |
   const geofencingReady = useGeofencingSetup(backgroundSecret);
   const allReady = !profileLoading && deviceReady && notificationsReady && geofencingReady;
 
+  // Keep the native splash visible until everything is set up
   useEffect(() => {
     if (allReady) SplashScreen.hideAsync();
   }, [allReady]);
 
-  if (!allReady) return null;
+  // Fallback for flows where the splash has already been dismissed
+  if (!allReady) return <Loader />;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
@@ -116,11 +131,19 @@ function RootNavigator({ session, userId }: { session: unknown; userId: string |
         <Stack.Screen name="login" />
       </Stack.Protected>
 
-      <Stack.Protected guard={!!session && !profile}>
+      <Stack.Protected guard={!!session && !hasSeenWelcome}>
+        <Stack.Screen name="welcome" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!!session && hasSeenWelcome && !profile}>
         <Stack.Screen name="onboarding" />
       </Stack.Protected>
 
-      <Stack.Protected guard={!!session && !!profile}>
+      <Stack.Protected guard={!!session && !!profile && !locationReady}>
+        <Stack.Screen name="permissions" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!!session && !!profile && locationReady}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="zone/[id]" />
       </Stack.Protected>
