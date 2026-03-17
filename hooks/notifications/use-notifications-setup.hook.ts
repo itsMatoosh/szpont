@@ -123,7 +123,7 @@ export function useNotificationsSetup(deviceId: string | null): boolean {
       tokenSub.remove();
       pushToStartCleanup?.();
     };
-  }, [deviceId, notificationStatus]);
+  }, [deviceId, notificationStatus, configured]);
 
   return isReady;
 }
