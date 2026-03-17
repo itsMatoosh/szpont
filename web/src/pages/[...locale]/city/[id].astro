@@ -1,61 +1,18 @@
 ---
 import Layout from '@/layouts/Layout.astro';
-import { t, localePath, locales } from '@/i18n/utils';
-import type { Locale } from '@/i18n/utils';
+import { t, localePath, localeFromParam } from '@/i18n/utils';
+import { supabase } from '@/lib/supabase';
 
-export async function getStaticPaths() {
-  const { data: cities } = await (await import('@/lib/supabase')).supabase
-    .from('cities')
-    .select('id, name, search_boundary');
+const locale = localeFromParam(Astro.params.locale);
+const cityId = Astro.params.id;
 
-  if (!cities) return [];
+const [{ data: city }, { data: zones }, { data: suggestions }] = await Promise.all([
+  supabase.from('cities').select('id, name').eq('id', cityId).single(),
+  supabase.from('zones').select('id, name, boundary').eq('city_id', cityId),
+  supabase.from('zone_suggestions').select('id, name, boundary').eq('city_id', cityId),
+]);
 
-  const paths = [];
-
-  for (const l of locales) {
-    for (const city of cities) {
-      const supabaseClient = (await import('@/lib/supabase')).supabase;
-
-      const [{ data: zones }, { data: suggestions }] = await Promise.all([
-        supabaseClient.from('zones').select('id, name, boundary').eq('city_id', city.id),
-        supabaseClient.from('zone_suggestions').select('id, name, boundary').eq('city_id', city.id),
-      ]);
-
-      paths.push({
-        params: { locale: l === 'en' ? undefined : l, id: city.id },
-        props: { locale: l, city, zones: zones ?? [], suggestions: suggestions ?? [] },
-      });
-    }
-  }
-
-  return paths;
-}
-
-interface Zone {
-  id: string;
-  name: string;
-  boundary: unknown;
-}
-
-/** User-submitted zone suggestion with the same shape as a zone for map rendering. */
-interface Suggestion {
-  id: string;
-  name: string;
-  boundary: unknown;
-}
-
-interface City {
-  id: string;
-  name: string;
-  search_boundary: unknown;
-}
-
-const { locale, city, zones, suggestions } = Astro.props as {
-  locale: Locale;
-  city: City;
-  zones: Zone[];
-  suggestions: Suggestion[];
-};
+if (!city) return Astro.redirect(localePath(locale, '/'));
 ---
 
 <Layout locale={locale} title={`${city.name} — Szpont`}>
@@ -104,8 +61,8 @@ const { locale, city, zones, suggestions } = Astro.props as {
     id="city-data"
     type="application/json"
     set:html={JSON.stringify({
-      zones: zones.map(z => ({ name: z.name, boundary: z.boundary })),
-      suggestions: suggestions.map(s => ({ name: s.name, boundary: s.boundary })),
+      zones: (zones ?? []).map(z => ({ name: z.name, boundary: z.boundary })),
+      suggestions: (suggestions ?? []).map(s => ({ name: s.name, boundary: s.boundary })),
     })}
   />
 </Layout>
@@ -148,7 +105,6 @@ const { locale, city, zones, suggestions } = Astro.props as {
   const suggestedLayerIds: string[] = [];
 
   map.on('load', () => {
-    // Fit camera to cover both active and suggested zones
     const allCoords = [
       ...zones.flatMap(z => extractCoordinates(z.boundary)),
       ...suggestions.flatMap(s => extractCoordinates(s.boundary)),
@@ -162,19 +118,14 @@ const { locale, city, zones, suggestions } = Astro.props as {
       map.fitBounds(bounds, { padding: 80 });
     }
 
-    // Draw active zones
     zones.forEach((zone, i) => {
-      const sourceId = `zone-${i}`;
-      addZoneLayers(sourceId, zone, ACTIVE_COLOR, activeLayerIds);
+      addZoneLayers(`zone-${i}`, zone, ACTIVE_COLOR, activeLayerIds);
     });
 
-    // Draw suggested zones with dashed outline
     suggestions.forEach((suggestion, i) => {
-      const sourceId = `suggestion-${i}`;
-      addZoneLayers(sourceId, suggestion, SUGGESTED_COLOR, suggestedLayerIds, true);
+      addZoneLayers(`suggestion-${i}`, suggestion, SUGGESTED_COLOR, suggestedLayerIds, true);
     });
 
-    // Wire up toggle buttons once layers exist
     initToggle('toggle-active', activeLayerIds);
     initToggle('toggle-suggested', suggestedLayerIds);
   });

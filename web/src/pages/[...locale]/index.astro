@@ -5,42 +5,84 @@ import FeatureSections from '@/components/FeatureSections.astro';
 import ZonesSection from '@/components/ZonesSection.astro';
 import FooterSection from '@/components/FooterSection.astro';
 import { supabase } from '@/lib/supabase';
-import { locales } from '@/i18n/utils';
-import type { Locale } from '@/i18n/utils';
+import { localeFromParam } from '@/i18n/utils';
+import { getVisitorId } from '@/lib/visitor';
 
-export async function getStaticPaths() {
-  const { data: rawCities } = await supabase
-    .from('cities')
-    .select('id, name, search_boundary, zones(id, name, zone_likes(count))');
+const locale = localeFromParam(Astro.params.locale);
+const visitorId = getVisitorId(Astro.cookies);
 
-  /** Total like count for a zone from the nested aggregate. */
-  function zoneLikes(z: { zone_likes: { count: number }[] }): number {
-    return z.zone_likes?.[0]?.count ?? 0;
-  }
-
-  const cities = (rawCities ?? [])
-    .map((c) => ({
-      ...c,
-      zones: [...c.zones].sort((a, b) => zoneLikes(b) - zoneLikes(a)),
-    }))
-    .sort((a, b) => {
-      const totalA = a.zones.reduce((sum, z) => sum + zoneLikes(z), 0);
-      const totalB = b.zones.reduce((sum, z) => sum + zoneLikes(z), 0);
-      return totalB - totalA;
-    });
-
-  return locales.map((l) => ({
-    params: { locale: l === 'en' ? undefined : l },
-    props: { locale: l, cities },
-  }));
+interface ZoneRow {
+  id: string;
+  name: string;
+  city_id: string;
+  zone_likes: { count: number }[];
 }
 
-const { locale, cities } = Astro.props as { locale: Locale; cities: typeof Astro.props.cities };
+interface SuggestionRow {
+  id: string;
+  name: string;
+  city_id: string;
+  zone_suggestion_likes: { count: number }[];
+}
+
+const [{ data: orderedCities }, { data: rawZones }, { data: rawSuggestions }] = await Promise.all([
+  supabase.from('cities_ordered_by_zone_likes').select('id, name'),
+  supabase.from('zones').select('id, name, city_id, zone_likes(count)'),
+  supabase.from('zone_suggestions').select('id, name, city_id, zone_suggestion_likes(count)'),
+]);
+
+let likedZoneIds = new Set<string>();
+let likedSuggestionIds = new Set<string>();
+
+if (visitorId) {
+  const [{ data: myZoneLikes }, { data: mySuggestionLikes }] = await Promise.all([
+    supabase.from('zone_likes').select('zone_id').eq('visitor_id', visitorId),
+    supabase.from('zone_suggestion_likes').select('suggestion_id').eq('visitor_id', visitorId),
+  ]);
+  likedZoneIds = new Set((myZoneLikes ?? []).map((r) => r.zone_id));
+  likedSuggestionIds = new Set((mySuggestionLikes ?? []).map((r) => r.suggestion_id));
+}
+
+/** Like count from a nested aggregate row. */
+function zoneLikeCount(z: ZoneRow): number {
+  return z.zone_likes?.[0]?.count ?? 0;
+}
+function suggestionLikeCount(s: SuggestionRow): number {
+  return s.zone_suggestion_likes?.[0]?.count ?? 0;
+}
+
+/** Group rows by city_id, sorted by like count descending. */
+const zonesByCity = new Map<string, ZoneRow[]>();
+for (const z of rawZones ?? []) {
+  const arr = zonesByCity.get(z.city_id) ?? [];
+  arr.push(z);
+  zonesByCity.set(z.city_id, arr);
+}
+for (const arr of zonesByCity.values()) {
+  arr.sort((a, b) => zoneLikeCount(b) - zoneLikeCount(a));
+}
+
+const suggestionsByCity = new Map<string, SuggestionRow[]>();
+for (const s of rawSuggestions ?? []) {
+  if (!s.city_id) continue;
+  const arr = suggestionsByCity.get(s.city_id) ?? [];
+  arr.push(s);
+  suggestionsByCity.set(s.city_id, arr);
+}
+for (const arr of suggestionsByCity.values()) {
+  arr.sort((a, b) => suggestionLikeCount(b) - suggestionLikeCount(a));
+}
+
+const cities = (orderedCities ?? []).map((c) => ({
+  ...c,
+  zones: zonesByCity.get(c.id) ?? [],
+  suggestions: suggestionsByCity.get(c.id) ?? [],
+}));
 ---
 
 <Layout locale={locale}>
   <HeroSection locale={locale} />
   <FeatureSections locale={locale} />
-  <ZonesSection locale={locale} cities={cities ?? []} />
+  <ZonesSection locale={locale} cities={cities} likedZoneIds={likedZoneIds} likedSuggestionIds={likedSuggestionIds} />
   <FooterSection locale={locale} />
 </Layout>

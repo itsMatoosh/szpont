@@ -1,6 +1,7 @@
 ---
 import type { Locale } from '@/i18n/utils';
 import { t, localePath } from '@/i18n/utils';
+import { VISITOR_COOKIE_SCRIPT } from '@/lib/visitor';
 import Analytics from '@vercel/analytics/astro'
 
 interface Props {
@@ -43,6 +44,7 @@ const currentPath = Astro.url.pathname.replace(/^\/pl/, '') || '/';
     <script is:inline define:vars={{ locale }}>
       document.cookie = `lang=${locale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
     </script>
+    <script is:inline set:html={VISITOR_COOKIE_SCRIPT} />
 
     <style is:global>
       @import '../styles/global.css';

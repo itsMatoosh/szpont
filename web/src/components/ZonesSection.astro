@@ -8,23 +8,39 @@ interface Zone {
   zone_likes: { count: number }[];
 }
 
+interface Suggestion {
+  id: string;
+  name: string;
+  zone_suggestion_likes: { count: number }[];
+}
+
 interface City {
   id: string;
   name: string;
-  search_boundary: unknown;
   zones: Zone[];
+  suggestions: Suggestion[];
 }
 
 interface Props {
   locale: Locale;
   cities: City[];
+  likedZoneIds: Set<string>;
+  likedSuggestionIds: Set<string>;
 }
 
-const { locale, cities } = Astro.props;
+const { locale, cities, likedZoneIds, likedSuggestionIds } = Astro.props;
 
-/** A city is linkable when it has a boundary and at least one active zone. */
+/** A city is linkable when it has at least one active or proposed zone. */
 function isLinkable(city: City): boolean {
-  return city.search_boundary != null && city.zones.length > 0;
+  return city.zones.length > 0 || city.suggestions.length > 0;
+}
+
+/** Extracts the like count from a nested Supabase aggregate. */
+function zoneLikeCount(z: Zone): number {
+  return z.zone_likes?.[0]?.count ?? 0;
+}
+function suggestionLikeCount(s: Suggestion): number {
+  return s.zone_suggestion_likes?.[0]?.count ?? 0;
 }
 ---
 
@@ -71,61 +87,127 @@ function isLinkable(city: City): boolean {
                   <p class="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
                     {t(locale, 'zones.activeLabel')}
                   </p>
-                  <div class="active-container grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3" data-city-id={city.id}>
-                    {city.zones.map((zone) =>
-                      linkable ? (
-                        <div class="zone-row flex items-center gap-2" data-zone-id={zone.id}>
-                          <a
-                            href={cityHref}
-                            class="zone-card group flex items-center gap-3 bg-surface border border-border rounded-2xl px-4 py-3 hover:border-accent transition-colors flex-1"
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                    {city.zones.map((zone) => {
+                      const liked = likedZoneIds.has(zone.id);
+                      const count = zoneLikeCount(zone);
+                      return (
+                        <div class="flex items-center gap-2">
+                          {linkable ? (
+                            <a
+                              href={cityHref}
+                              class="zone-card group flex items-center gap-3 bg-surface border border-border rounded-2xl px-4 py-3 hover:border-accent transition-colors flex-1"
+                            >
+                              <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-accent/15 shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="zone-pin w-4 h-4 text-accent">
+                                  <path fill-rule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 3.827 3.024ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd" />
+                                </svg>
+                              </span>
+                              <span class="font-semibold text-foreground group-hover:text-accent transition-colors flex-1">
+                                {zone.name}
+                              </span>
+                            </a>
+                          ) : (
+                            <div class="zone-card flex items-center gap-3 bg-surface border border-border rounded-2xl px-4 py-3 flex-1">
+                              <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-accent/15 shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="zone-pin w-4 h-4 text-accent">
+                                  <path fill-rule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 3.827 3.024ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd" />
+                                </svg>
+                              </span>
+                              <span class="font-semibold text-foreground flex-1">
+                                {zone.name}
+                              </span>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            class:list={[
+                              'like-btn flex items-center gap-1.5 text-sm font-semibold transition-colors',
+                              liked ? 'text-accent' : 'text-muted hover:text-accent cursor-pointer',
+                            ]}
+                            disabled={liked}
+                            data-like-table="zone_likes"
+                            data-like-fk="zone_id"
+                            data-like-id={zone.id}
+                            data-like-count={count}
                           >
-                            <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-accent/15 shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="zone-pin w-4 h-4 text-accent">
-                                <path fill-rule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 3.827 3.024ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd" />
-                              </svg>
-                            </span>
-                            <span class="font-semibold text-foreground group-hover:text-accent transition-colors flex-1">
-                              {zone.name}
-                            </span>
-                          </a>
-                          <span class="zone-like-placeholder"></span>
+                            {liked ? (
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="like-icon w-4 h-4"><path d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z" /></svg>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="like-icon w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
+                            )}
+                            <span class="like-count">{count}</span>
+                          </button>
                         </div>
-                      ) : (
-                        <div class="zone-row flex items-center gap-2" data-zone-id={zone.id}>
-                          <div class="zone-card flex items-center gap-3 bg-surface border border-border rounded-2xl px-4 py-3 flex-1">
-                            <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-accent/15 shrink-0">
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="zone-pin w-4 h-4 text-accent">
-                                <path fill-rule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 3.827 3.024ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd" />
-                              </svg>
-                            </span>
-                            <span class="font-semibold text-foreground flex-1">
-                              {zone.name}
-                            </span>
-                          </div>
-                          <span class="zone-like-placeholder"></span>
-                        </div>
-                      )
-                    )}
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* Proposed zones (filled client-side) */}
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
-                  {t(locale, 'zones.proposedLabel')}
-                </p>
-                <div
-                  class="proposed-container grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3"
-                  data-city-id={city.id}
-                  data-linkable={linkable ? 'true' : 'false'}
-                  data-city-href={linkable ? cityHref : ''}
-                >
-                  <p class="proposed-empty text-sm text-muted col-span-full">
-                    {t(locale, 'zones.noProposed')}
+              {/* Proposed zones */}
+              {city.suggestions.length > 0 && (
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wider text-muted mb-2">
+                    {t(locale, 'zones.proposedLabel')}
                   </p>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                    {city.suggestions.map((suggestion) => {
+                      const liked = likedSuggestionIds.has(suggestion.id);
+                      const count = suggestionLikeCount(suggestion);
+                      return (
+                        <div class="flex items-center gap-2">
+                          {linkable ? (
+                            <a
+                              href={cityHref}
+                              class="zone-card group flex items-center gap-3 bg-surface border border-border rounded-2xl px-4 py-3 hover:border-[#FF9500] transition-colors flex-1"
+                            >
+                              <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-[#FF9500]/15 shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="zone-pin w-4 h-4 text-[#FF9500]">
+                                  <path fill-rule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 3.827 3.024ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd" />
+                                </svg>
+                              </span>
+                              <span class="font-semibold text-foreground group-hover:text-[#FF9500] transition-colors flex-1">
+                                {suggestion.name}
+                              </span>
+                            </a>
+                          ) : (
+                            <div class="zone-card flex items-center gap-3 bg-surface border border-border rounded-2xl px-4 py-3 flex-1">
+                              <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-[#FF9500]/15 shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="zone-pin w-4 h-4 text-[#FF9500]">
+                                  <path fill-rule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 3.827 3.024ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd" />
+                                </svg>
+                              </span>
+                              <span class="font-semibold text-foreground flex-1">
+                                {suggestion.name}
+                              </span>
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            class:list={[
+                              'like-btn flex items-center gap-1.5 text-sm font-semibold transition-colors',
+                              liked ? 'text-accent' : 'text-muted hover:text-accent cursor-pointer',
+                            ]}
+                            disabled={liked}
+                            data-like-table="zone_suggestion_likes"
+                            data-like-fk="suggestion_id"
+                            data-like-id={suggestion.id}
+                            data-like-count={count}
+                          >
+                            {liked ? (
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="like-icon w-4 h-4"><path d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z" /></svg>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="like-icon w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
+                            )}
+                            <span class="like-count">{count}</span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           );
         })}
@@ -159,223 +241,51 @@ function isLinkable(city: City): boolean {
   }
 </style>
 
-<script is:inline id="zones-i18n" type="application/json" set:html={JSON.stringify({
-  like: t(locale, 'zones.likeButton'),
-  liked: t(locale, 'zones.liked'),
-  noProposed: t(locale, 'zones.noProposed'),
-})} />
-
 <script>
   import { supabase } from '@/lib/supabase';
+  import { VISITOR_COOKIE_NAME } from '@/lib/visitor';
 
-  const i18n = JSON.parse(document.getElementById('zones-i18n')!.textContent!) as {
-    like: string;
-    liked: string;
-    noProposed: string;
-  };
+  const FILLED_HEART = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="like-icon w-4 h-4"><path d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z" /></svg>';
 
-  const FILLED_HEART = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z" /></svg>';
-  const OUTLINE_HEART = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>';
-  const PIN_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="zone-pin w-4 h-4 text-accent"><path fill-rule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 3.827 3.024ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd" /></svg>';
-  const SUGGESTED_PIN_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="zone-pin w-4 h-4 text-[#FF9500]"><path fill-rule="evenodd" d="m11.54 22.351.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 1.144-.742 19.58 19.58 0 0 0 2.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 0 0-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 0 0 3.827 3.024ZM12 13.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd" /></svg>';
-
-  const VISITOR_KEY = 'szpont_visitor_id';
-
-  /** Returns a persistent visitor ID, creating one if needed. */
-  function getVisitorId(): string {
-    let id = localStorage.getItem(VISITOR_KEY);
-    if (!id) {
-      id = crypto.randomUUID();
-      localStorage.setItem(VISITOR_KEY, id);
-    }
-    return id;
+  /** Reads the visitor_id from the cookie. */
+  function readVisitorId(): string | null {
+    const match = document.cookie.match(new RegExp('(?:^|; )' + VISITOR_COOKIE_NAME + '=([^;]*)'));
+    return match ? decodeURIComponent(match[1]) : null;
   }
 
-  /** Creates a like button element wired to insert into the given table. */
-  function createLikeButton(opts: {
-    likeCount: number;
-    alreadyLiked: boolean;
-    table: 'zone_likes' | 'zone_suggestion_likes';
-    fkColumn: string;
-    fkValue: string;
-    visitorId: string;
-  }): HTMLButtonElement {
-    const { likeCount, alreadyLiked, table, fkColumn, fkValue, visitorId } = opts;
+  for (const btn of document.querySelectorAll<HTMLButtonElement>('.like-btn:not(:disabled)')) {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
 
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'like-btn flex items-center gap-1.5 text-sm font-semibold transition-colors cursor-pointer '
-      + (alreadyLiked ? 'text-accent' : 'text-muted hover:text-accent');
-    if (alreadyLiked) btn.disabled = true;
+      const table = btn.dataset.likeTable as 'zone_likes' | 'zone_suggestion_likes';
+      const fkColumn = btn.dataset.likeFk!;
+      const fkValue = btn.dataset.likeId!;
+      const currentCount = Number(btn.dataset.likeCount ?? 0);
+      const visitorId = readVisitorId();
+      if (!visitorId) return;
 
-    const countSpan = document.createElement('span');
-    countSpan.textContent = String(likeCount);
+      const countEl = btn.querySelector('.like-count')!;
+      const iconEl = btn.querySelector('.like-icon')!;
 
-    btn.innerHTML = alreadyLiked ? FILLED_HEART : OUTLINE_HEART;
-    btn.appendChild(countSpan);
+      // Optimistic update
+      btn.disabled = true;
+      btn.classList.remove('text-muted', 'hover:text-accent', 'cursor-pointer');
+      btn.classList.add('text-accent');
+      countEl.textContent = String(currentCount + 1);
+      iconEl.outerHTML = FILLED_HEART;
 
-    if (!alreadyLiked) {
-      btn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Optimistic update: show liked state immediately
-        btn.disabled = true;
-        btn.classList.remove('text-muted', 'hover:text-accent');
-        btn.classList.add('text-accent');
-        countSpan.textContent = String(likeCount + 1);
-        btn.querySelector('svg')!.outerHTML = FILLED_HEART;
-
-        const { error } = await supabase.from(table).insert({
-          [fkColumn]: fkValue,
-          visitor_id: visitorId,
-        });
-
-        // Roll back on failure
-        if (error) {
-          btn.disabled = false;
-          btn.classList.remove('text-accent');
-          btn.classList.add('text-muted', 'hover:text-accent');
-          countSpan.textContent = String(likeCount);
-          btn.querySelector('svg')!.outerHTML = OUTLINE_HEART;
-        }
-      });
-    }
-
-    return btn;
-  }
-
-  async function init() {
-    const proposedContainers = document.querySelectorAll<HTMLElement>('.proposed-container');
-    const activeContainers = document.querySelectorAll<HTMLElement>('.active-container');
-    if (proposedContainers.length === 0 && activeContainers.length === 0) return;
-
-    const cityIds = Array.from(proposedContainers).map((el) => el.dataset.cityId!);
-    const visitorId = getVisitorId();
-
-    // Fetch all data in parallel: suggestions + counts, zone like counts, visitor's likes for both
-    const [suggestionsRes, mySuggestionLikesRes, zoneLikeCountsRes, myZoneLikesRes] = await Promise.all([
-      supabase
-        .from('zone_suggestions')
-        .select('id, name, city_id, zone_suggestion_likes(count)')
-        .in('city_id', cityIds),
-      supabase
-        .from('zone_suggestion_likes')
-        .select('suggestion_id')
-        .eq('visitor_id', visitorId),
-      supabase
-        .from('zones')
-        .select('id, zone_likes(count)'),
-      supabase
-        .from('zone_likes')
-        .select('zone_id')
-        .eq('visitor_id', visitorId),
-    ]);
-
-    // --- Active zones: inject like buttons ---
-    const zoneLikeCounts = new Map<string, number>();
-    for (const z of zoneLikeCountsRes.data ?? []) {
-      const count = (z.zone_likes as unknown as { count: number }[])?.[0]?.count ?? 0;
-      zoneLikeCounts.set(z.id, count);
-    }
-    const likedZoneIds = new Set((myZoneLikesRes.data ?? []).map((r) => r.zone_id));
-
-    for (const container of activeContainers) {
-      const rows = container.querySelectorAll<HTMLElement>('.zone-row');
-      for (const row of rows) {
-        const zoneId = row.dataset.zoneId!;
-        const likeCount = zoneLikeCounts.get(zoneId) ?? 0;
-        const alreadyLiked = likedZoneIds.has(zoneId);
-
-        const placeholder = row.querySelector('.zone-like-placeholder');
-        if (placeholder) {
-          const btn = createLikeButton({
-            likeCount,
-            alreadyLiked,
-            table: 'zone_likes',
-            fkColumn: 'zone_id',
-            fkValue: zoneId,
-            visitorId,
-          });
-          placeholder.replaceWith(btn);
-        }
-      }
-    }
-
-    // --- Proposed zones: render cards client-side ---
-    const suggestions = suggestionsRes.data ?? [];
-    const likedSuggestionIds = new Set((mySuggestionLikesRes.data ?? []).map((r) => r.suggestion_id));
-
-    const byCityId = new Map<string, typeof suggestions>();
-    for (const s of suggestions) {
-      if (!s.city_id) continue;
-      const arr = byCityId.get(s.city_id) ?? [];
-      arr.push(s);
-      byCityId.set(s.city_id, arr);
-    }
-
-    for (const container of proposedContainers) {
-      const cityId = container.dataset.cityId!;
-      const linkable = container.dataset.linkable === 'true';
-      const cityHref = container.dataset.cityHref || '';
-      const citySuggestions = byCityId.get(cityId) ?? [];
-
-      citySuggestions.sort((a, b) => {
-        const countA = (a.zone_suggestion_likes as unknown as { count: number }[])?.[0]?.count ?? 0;
-        const countB = (b.zone_suggestion_likes as unknown as { count: number }[])?.[0]?.count ?? 0;
-        return countB - countA;
+      const { error } = await supabase.from(table).insert({
+        [fkColumn]: fkValue,
+        visitor_id: visitorId,
       });
 
-      const emptyMsg = container.querySelector('.proposed-empty');
-
-      if (citySuggestions.length === 0) {
-        if (emptyMsg) emptyMsg.classList.remove('hidden');
-        continue;
+      if (error) {
+        btn.disabled = false;
+        btn.classList.remove('text-accent');
+        btn.classList.add('text-muted', 'hover:text-accent', 'cursor-pointer');
+        countEl.textContent = String(currentCount);
       }
-
-      if (emptyMsg) emptyMsg.classList.add('hidden');
-
-      for (const suggestion of citySuggestions) {
-        const likeCount = (suggestion.zone_suggestion_likes as unknown as { count: number }[])?.[0]?.count ?? 0;
-        const alreadyLiked = likedSuggestionIds.has(suggestion.id);
-
-        const row = document.createElement('div');
-        row.className = 'zone-row flex items-center gap-2';
-
-        const card = document.createElement(linkable ? 'a' : 'div');
-        card.className = 'zone-card flex items-center gap-3 bg-surface border border-border rounded-2xl px-4 py-3 flex-1'
-          + (linkable ? ' hover:border-[#FF9500] transition-colors group' : '');
-        if (linkable && card instanceof HTMLAnchorElement) {
-          card.href = cityHref;
-        }
-
-        const pinIcon = document.createElement('span');
-        pinIcon.className = 'flex items-center justify-center w-7 h-7 rounded-lg bg-[#FF9500]/15 shrink-0';
-        pinIcon.innerHTML = SUGGESTED_PIN_SVG;
-
-        const nameEl = document.createElement('span');
-        nameEl.className = 'font-semibold text-foreground flex-1' + (linkable ? ' group-hover:text-[#FF9500] transition-colors' : '');
-        nameEl.textContent = suggestion.name;
-
-        card.appendChild(pinIcon);
-        card.appendChild(nameEl);
-
-        const likeBtn = createLikeButton({
-          likeCount,
-          alreadyLiked,
-          table: 'zone_suggestion_likes',
-          fkColumn: 'suggestion_id',
-          fkValue: suggestion.id,
-          visitorId,
-        });
-
-        row.appendChild(card);
-        row.appendChild(likeBtn);
-        container.appendChild(row);
-      }
-    }
-
+    });
   }
-
-  init();
 </script>
