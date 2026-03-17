@@ -1,0 +1,106 @@
+---
+import type { Locale } from '@/i18n/utils';
+import { t } from '@/i18n/utils';
+import AccentTitle from './AccentTitle.astro';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<section id="hero" class="min-h-screen flex flex-col items-center justify-center px-5 md:px-8">
+  <div class="max-w-2xl w-full flex flex-col items-center text-center gap-10">
+    <img src="/szpont-logo.svg" alt="Szpont" class="h-12 md:h-16 w-auto" />
+
+    <AccentTitle
+      before={t(locale, 'hero.titleBefore')}
+      accent={t(locale, 'hero.titleAccent')}
+      large
+    />
+
+    <!-- Waitlist form -->
+    <form id="waitlist-form" class="w-full max-w-sm flex flex-col gap-3 items-center">
+      <input
+        type="email"
+        id="waitlist-email"
+        required
+        placeholder={t(locale, 'waitlist.placeholder')}
+        class="w-full min-h-[48px] px-4 py-3 rounded-xl bg-surface border border-border text-foreground text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+      />
+      <p id="waitlist-email-error" class="text-red-500 text-sm hidden">
+        {t(locale, 'waitlist.invalidEmail')}
+      </p>
+      <button
+        type="submit"
+        class="w-full min-h-[48px] rounded-xl bg-accent text-on-accent font-semibold text-base cursor-pointer hover:opacity-90 transition-opacity"
+      >
+        {t(locale, 'waitlist.button')}
+      </button>
+    </form>
+
+    <a href="#zones" class="text-muted text-sm hover:text-accent transition-colors underline underline-offset-4">
+      {t(locale, 'waitlist.suggestZoneLink')}
+    </a>
+
+    <div id="waitlist-success" class="w-full max-w-sm min-h-[48px] rounded-xl bg-highlight flex items-center justify-center hidden" data-template={t(locale, 'waitlist.success')}>
+      <p class="text-primary font-bold text-base" id="waitlist-success-text"></p>
+    </div>
+    <p id="waitlist-already" class="text-muted font-semibold text-lg hidden">
+      {t(locale, 'waitlist.alreadyOnList')}
+    </p>
+    <p id="waitlist-error" class="text-red-500 font-semibold text-lg hidden">
+      {t(locale, 'waitlist.error')}
+    </p>
+  </div>
+</section>
+
+<script>
+  import { supabase } from '@/lib/supabase';
+
+  const form = document.getElementById('waitlist-form') as HTMLFormElement;
+  const emailInput = document.getElementById('waitlist-email') as HTMLInputElement;
+  const emailError = document.getElementById('waitlist-email-error')!;
+  const successEl = document.getElementById('waitlist-success')!;
+  const successText = document.getElementById('waitlist-success-text')!;
+  const alreadyMsg = document.getElementById('waitlist-already')!;
+  const errorMsg = document.getElementById('waitlist-error')!;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    emailError.classList.add('hidden');
+    successEl.classList.add('hidden');
+    alreadyMsg.classList.add('hidden');
+    errorMsg.classList.add('hidden');
+
+    const email = emailInput.value.trim();
+    if (!emailRegex.test(email)) {
+      emailError.classList.remove('hidden');
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('waitlist')
+      .insert({ email })
+      .select('position')
+      .single();
+
+    if (error) {
+      if (error.code === '23505') {
+        form.classList.add('hidden');
+        alreadyMsg.classList.remove('hidden');
+      } else {
+        errorMsg.classList.remove('hidden');
+      }
+      return;
+    }
+
+    const template = successEl.dataset.template ?? '';
+    successText.textContent = template.replace('{{number}}', String(data.position));
+    form.classList.add('hidden');
+    successEl.classList.remove('hidden');
+  });
+</script>

@@ -56,7 +56,6 @@ export function useNotificationsSetup(deviceId: string | null): boolean {
     }
 
     let cancelled = false;
-    setIsReady(false);
 
     // Fetch the current token and sync it if it differs from the cache
     (async () => {

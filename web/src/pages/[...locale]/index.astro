@@ -1,0 +1,56 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import HeroSection from '@/components/HeroSection.astro';
+import FeatureSections from '@/components/FeatureSections.astro';
+import ZonesSection from '@/components/ZonesSection.astro';
+import FooterSection from '@/components/FooterSection.astro';
+import { supabase } from '@/lib/supabase';
+import { locales } from '@/i18n/utils';
+import type { Locale } from '@/i18n/utils';
+
+export async function getStaticPaths() {
+  const { data: rawCities } = await supabase
+    .from('cities')
+    .select('id, name, search_boundary, zones(id, name, zone_likes(count))');
+
+  /** Total like count for a zone from the nested aggregate. */
+  function zoneLikes(z: { zone_likes: { count: number }[] }): number {
+    return z.zone_likes?.[0]?.count ?? 0;
+  }
+
+  const cities = (rawCities ?? [])
+    .map((c) => ({
+      ...c,
+      zones: [...c.zones].sort((a, b) => zoneLikes(b) - zoneLikes(a)),
+    }))
+    .sort((a, b) => {
+      const totalA = a.zones.reduce((sum, z) => sum + zoneLikes(z), 0);
+      const totalB = b.zones.reduce((sum, z) => sum + zoneLikes(z), 0);
+      return totalB - totalA;
+    });
+
+  return locales.map((l) => ({
+    params: { locale: l === 'en' ? undefined : l },
+    props: { locale: l, cities },
+  }));
+}
+
+const { locale, cities } = Astro.props as { locale: Locale; cities: typeof Astro.props.cities };
+---
+
+<Layout locale={locale}>
+  <HeroSection locale={locale} />
+  <FeatureSections locale={locale} />
+  <ZonesSection locale={locale} cities={cities ?? []} />
+  <FooterSection locale={locale} />
+</Layout>
+
+<script>
+  // Redirect Polish-speaking visitors to /pl/ on first visit
+  if (!sessionStorage.getItem('lang-redirected')) {
+    sessionStorage.setItem('lang-redirected', '1');
+    if (navigator.language.startsWith('pl') && !window.location.pathname.startsWith('/pl')) {
+      window.location.href = '/pl/';
+    }
+  }
+</script>

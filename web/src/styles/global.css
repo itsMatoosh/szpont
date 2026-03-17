@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: 'Nunito', sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-on-primary: var(--on-primary);
+  --color-on-accent: var(--on-accent);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-highlight: var(--highlight);
+}
+
+:root {
+  --background: #FAFAFA;
+  --foreground: #262626;
+  --surface: #FFFFFF;
+  --primary: #000000;
+  --accent: #CCFF00;
+  --on-primary: #F5F5F5;
+  --on-accent: #262626;
+  --muted: #8E8E8E;
+  --border: #DBDBDB;
+  --highlight: #ECECEC;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #000000;
+    --foreground: #F5F5F5;
+    --surface: #1C1C1C;
+    --primary: #FFFFFF;
+    --accent: #CCFF00;
+    --on-primary: #262626;
+    --on-accent: #262626;
+    --muted: #8E8E8E;
+    --border: #262626;
+    --highlight: #2A2A2A;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+}

@@ -1,0 +1,158 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import { t, localePath, locales } from '@/i18n/utils';
+import type { Locale } from '@/i18n/utils';
+
+export async function getStaticPaths() {
+  const { data: cities } = await (await import('@/lib/supabase')).supabase
+    .from('cities')
+    .select('id, name, search_boundary');
+
+  if (!cities) return [];
+
+  const paths = [];
+
+  for (const l of locales) {
+    for (const city of cities) {
+      const { data: zones } = await (await import('@/lib/supabase')).supabase
+        .from('zones')
+        .select('id, name, boundary')
+        .eq('city_id', city.id);
+
+      paths.push({
+        params: { locale: l === 'en' ? undefined : l, id: city.id },
+        props: { locale: l, city, zones: zones ?? [] },
+      });
+    }
+  }
+
+  return paths;
+}
+
+interface Zone {
+  id: string;
+  name: string;
+  boundary: unknown;
+}
+
+interface City {
+  id: string;
+  name: string;
+  search_boundary: unknown;
+}
+
+const { locale, city, zones } = Astro.props as { locale: Locale; city: City; zones: Zone[] };
+---
+
+<Layout locale={locale} title={`${city.name} — Szpont`}>
+  <div class="relative w-full h-screen">
+    <div id="map" class="w-full h-full"></div>
+
+    <!-- Back button -->
+    <a
+      href={localePath(locale, '/')}
+      class="absolute top-4 left-4 z-10 flex items-center gap-2 bg-surface/90 backdrop-blur border border-border rounded-xl px-4 py-2 text-foreground font-semibold text-sm hover:border-accent transition-colors"
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+        <path fill-rule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clip-rule="evenodd" />
+      </svg>
+      {t(locale, 'cityMap.back')}
+    </a>
+
+    <!-- Floating suggest button -->
+    <a
+      href={localePath(locale, '/suggest-zone')}
+      class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 min-h-[48px] leading-[48px] px-8 rounded-full bg-accent text-on-accent font-semibold text-base text-center shadow-lg hover:opacity-90 transition-opacity whitespace-nowrap"
+    >
+      {t(locale, 'cityMap.suggestButton')}
+    </a>
+  </div>
+  <script is:inline id="city-data" type="application/json" set:html={JSON.stringify({ zones: zones.map(z => ({ name: z.name, boundary: z.boundary })) })} />
+</Layout>
+
+<script>
+  import mapboxgl from 'mapbox-gl';
+  import 'mapbox-gl/dist/mapbox-gl.css';
+
+  const dataEl = document.getElementById('city-data')!;
+  const { zones } = JSON.parse(dataEl.textContent!) as {
+    zones: { name: string; boundary: GeoJSON.Geometry }[];
+  };
+
+  const token = import.meta.env.PUBLIC_MAPBOX_ACCESS_TOKEN;
+  mapboxgl.accessToken = token;
+
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const style = isDark
+    ? 'mapbox://styles/mapbox/dark-v11'
+    : 'mapbox://styles/mapbox/light-v11';
+
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style,
+    center: [0, 0],
+    zoom: 2,
+  });
+
+  map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+  map.on('load', () => {
+    // Fit camera to cover all zones with comfortable padding
+    const allZoneCoords = zones.flatMap(z => extractCoordinates(z.boundary));
+    if (allZoneCoords.length > 0) {
+      const bounds = allZoneCoords.reduce(
+        (b, c) => b.extend(c as [number, number]),
+        new mapboxgl.LngLatBounds(allZoneCoords[0] as [number, number], allZoneCoords[0] as [number, number])
+      );
+      map.fitBounds(bounds, { padding: 80 });
+    }
+
+    // Draw each zone
+    zones.forEach((zone, i) => {
+      const sourceId = `zone-${i}`;
+      map.addSource(sourceId, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: zone.boundary, properties: { name: zone.name } } as GeoJSON.Feature,
+      });
+
+      map.addLayer({
+        id: `${sourceId}-fill`,
+        type: 'fill',
+        source: sourceId,
+        paint: { 'fill-color': '#CCFF00', 'fill-opacity': isDark ? 0.15 : 0.25 },
+      });
+
+      map.addLayer({
+        id: `${sourceId}-line`,
+        type: 'line',
+        source: sourceId,
+        paint: { 'line-color': '#CCFF00', 'line-width': 2 },
+      });
+
+      map.addLayer({
+        id: `${sourceId}-label`,
+        type: 'symbol',
+        source: sourceId,
+        layout: {
+          'text-field': zone.name,
+          'text-size': 14,
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+          'text-anchor': 'center',
+        },
+        paint: {
+          'text-color': isDark ? '#F5F5F5' : '#262626',
+          'text-halo-color': isDark ? '#000000' : '#FFFFFF',
+          'text-halo-width': 1.5,
+        },
+      });
+    });
+  });
+
+  /** Recursively extracts [lng, lat] pairs from a GeoJSON geometry. */
+  function extractCoordinates(geom: GeoJSON.Geometry): number[][] {
+    if (geom.type === 'Polygon') return (geom as GeoJSON.Polygon).coordinates.flat();
+    if (geom.type === 'MultiPolygon') return (geom as GeoJSON.MultiPolygon).coordinates.flat(2);
+    if (geom.type === 'Point') return [(geom as GeoJSON.Point).coordinates];
+    return [];
+  }
+</script>

@@ -1,0 +1,343 @@
+---
+import type { Locale } from '@/i18n/utils';
+import { t, localePath } from '@/i18n/utils';
+
+interface CityOption {
+  id: string;
+  name: string;
+}
+
+interface Props {
+  locale: Locale;
+  cities: CityOption[];
+}
+
+const { locale, cities } = Astro.props;
+
+const attendanceOptions = ['< 100', '100–200', '200–500', '500–1000', '1000+'];
+---
+
+<div class="max-w-2xl w-full mx-auto px-5 md:px-8 py-16 md:py-24">
+  <!-- Back link -->
+  <a
+    href={localePath(locale, '/')}
+    class="inline-flex items-center gap-2 text-muted hover:text-accent transition-colors mb-8 text-sm font-semibold"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
+      <path fill-rule="evenodd" d="M7.72 12.53a.75.75 0 010-1.06l7.5-7.5a.75.75 0 111.06 1.06L9.31 12l6.97 6.97a.75.75 0 11-1.06 1.06l-7.5-7.5z" clip-rule="evenodd" />
+    </svg>
+    {t(locale, 'zones.backToHome')}
+  </a>
+
+  <h1 class="text-2xl md:text-4xl font-bold text-foreground mb-10">
+    {t(locale, 'suggestZone.title')}
+  </h1>
+
+  <form id="suggest-form" class="flex flex-col gap-6">
+    <!-- Zone name -->
+    <div class="flex flex-col gap-1.5">
+      <label for="zone-name" class="text-sm font-semibold text-foreground">
+        {t(locale, 'suggestZone.nameLabel')}
+      </label>
+      <input
+        type="text"
+        id="zone-name"
+        required
+        minlength="2"
+        placeholder={t(locale, 'suggestZone.namePlaceholder')}
+        class="w-full min-h-[48px] px-4 py-3 rounded-xl bg-surface border border-border text-foreground text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+      />
+      <p class="field-error text-red-500 text-sm hidden" data-field="zone-name"></p>
+    </div>
+
+    <!-- City (dropdown + "Other" text input) -->
+    <div class="flex flex-col gap-1.5">
+      <label for="zone-city" class="text-sm font-semibold text-foreground">
+        {t(locale, 'suggestZone.cityLabel')}
+      </label>
+      <select
+        id="zone-city"
+        required
+        class="w-full min-h-[48px] px-4 py-3 rounded-xl bg-surface border border-border text-foreground text-base focus:outline-none focus:ring-2 focus:ring-accent appearance-none"
+      >
+        <option value="" disabled selected>{t(locale, 'suggestZone.cityPlaceholder')}</option>
+        {cities.map((c) => (
+          <option value={c.id}>{c.name}</option>
+        ))}
+        <option value="__other__">{t(locale, 'suggestZone.cityOther')}</option>
+      </select>
+      <input
+        type="text"
+        id="zone-city-other"
+        minlength="2"
+        placeholder={t(locale, 'suggestZone.cityOtherPlaceholder')}
+        class="hidden w-full min-h-[48px] px-4 py-3 rounded-xl bg-surface border border-border text-foreground text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+      />
+      <p class="field-error text-red-500 text-sm hidden" data-field="zone-city"></p>
+    </div>
+
+    <!-- Motivation -->
+    <div class="flex flex-col gap-1.5">
+      <label for="zone-motivation" class="text-sm font-semibold text-foreground">
+        {t(locale, 'suggestZone.motivationLabel')}
+      </label>
+      <textarea
+        id="zone-motivation"
+        required
+        minlength="10"
+        rows="4"
+        placeholder={t(locale, 'suggestZone.motivationPlaceholder')}
+        class="w-full min-h-[120px] px-4 py-3 rounded-xl bg-surface border border-border text-foreground text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent resize-y"
+      ></textarea>
+      <p class="field-error text-red-500 text-sm hidden" data-field="zone-motivation"></p>
+    </div>
+
+    <!-- Attendance -->
+    <div class="flex flex-col gap-1.5">
+      <label for="zone-attendance" class="text-sm font-semibold text-foreground">
+        {t(locale, 'suggestZone.attendanceLabel')}
+      </label>
+      <select
+        id="zone-attendance"
+        required
+        class="w-full min-h-[48px] px-4 py-3 rounded-xl bg-surface border border-border text-foreground text-base focus:outline-none focus:ring-2 focus:ring-accent appearance-none"
+      >
+        <option value="" disabled selected>{t(locale, 'suggestZone.attendancePlaceholder')}</option>
+        {attendanceOptions.map((opt) => (
+          <option value={opt}>{opt}</option>
+        ))}
+      </select>
+      <p class="field-error text-red-500 text-sm hidden" data-field="zone-attendance"></p>
+    </div>
+
+    <!-- GeoJSON boundary -->
+    <div class="flex flex-col gap-1.5">
+      <label class="text-sm font-semibold text-foreground">
+        {t(locale, 'suggestZone.boundaryLabel')}
+      </label>
+
+      <!-- Helper card -->
+      <div class="flex items-start gap-3 bg-surface border border-border rounded-xl px-4 py-3 mb-1">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 shrink-0 text-muted mt-0.5">
+          <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm8.706-1.442c1.146-.573 2.437.463 2.126 1.706l-.709 2.836.042-.02a.75.75 0 01.67 1.34l-.04.022c-1.147.573-2.438-.463-2.127-1.706l.71-2.836-.042.02a.75.75 0 11-.671-1.34l.041-.022zM12 9a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+        </svg>
+        <p class="text-muted text-sm leading-relaxed">
+          {t(locale, 'suggestZone.boundaryHelper')}{' '}
+          <a href="https://geojson.io/next" target="_blank" rel="noopener noreferrer" class="text-foreground underline font-bold">
+            {t(locale, 'suggestZone.boundaryHelperLink')}
+          </a>{' '}
+          {t(locale, 'suggestZone.boundaryHelperAfter')}
+        </p>
+      </div>
+
+      <label
+        for="zone-boundary"
+        class="flex items-center gap-3 min-h-[48px] px-4 py-3 rounded-xl bg-surface border border-border border-dashed cursor-pointer hover:border-accent transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 text-muted shrink-0">
+          <path fill-rule="evenodd" d="M11.47 2.47a.75.75 0 011.06 0l4.5 4.5a.75.75 0 01-1.06 1.06l-3.22-3.22V16.5a.75.75 0 01-1.5 0V4.81L8.03 8.03a.75.75 0 01-1.06-1.06l4.5-4.5zM3 15.75a.75.75 0 01.75.75v2.25a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5V16.5a.75.75 0 011.5 0v2.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V16.5a.75.75 0 01.75-.75z" clip-rule="evenodd" />
+        </svg>
+        <span id="boundary-filename" class="text-muted text-base">{t(locale, 'suggestZone.boundaryNone')}</span>
+        <input
+          type="file"
+          id="zone-boundary"
+          accept=".geojson,.json"
+          required
+          class="sr-only"
+        />
+      </label>
+      <p id="boundary-valid" class="text-accent text-sm hidden">✓</p>
+      <p class="field-error text-red-500 text-sm hidden" data-field="zone-boundary"></p>
+    </div>
+
+    <!-- Email -->
+    <div class="flex flex-col gap-1.5">
+      <label for="zone-email" class="text-sm font-semibold text-foreground">
+        {t(locale, 'suggestZone.emailLabel')}
+      </label>
+      <input
+        type="email"
+        id="zone-email"
+        required
+        placeholder={t(locale, 'suggestZone.emailPlaceholder')}
+        class="w-full min-h-[48px] px-4 py-3 rounded-xl bg-surface border border-border text-foreground text-base placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent"
+      />
+      <p class="field-error text-red-500 text-sm hidden" data-field="zone-email"></p>
+    </div>
+
+    <!-- Submit -->
+    <button
+      type="submit"
+      id="submit-btn"
+      class="w-full min-h-[48px] rounded-xl bg-accent text-on-accent font-semibold text-base cursor-pointer hover:opacity-90 transition-opacity mt-2"
+    >
+      {t(locale, 'suggestZone.submit')}
+    </button>
+  </form>
+
+  <div id="suggest-success" class="mt-8 hidden rounded-xl bg-accent px-5 py-4 flex items-center gap-3">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 shrink-0 text-on-accent">
+      <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+    </svg>
+    <p class="text-on-accent font-semibold text-lg">
+      {t(locale, 'suggestZone.success')}
+    </p>
+  </div>
+  <div id="suggest-error" class="mt-8 hidden rounded-xl bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800 px-5 py-4 flex items-center gap-3">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 shrink-0 text-red-600 dark:text-red-400">
+      <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+    </svg>
+    <p class="text-red-700 dark:text-red-300 font-semibold text-lg">
+      {t(locale, 'suggestZone.error')}
+    </p>
+  </div>
+</div>
+
+<script is:inline id="suggest-msgs" type="application/json" set:html={JSON.stringify({
+  required: t(locale, 'validation.required'),
+  minChars2: t(locale, 'validation.minChars').replace('{{min}}', '2'),
+  minChars10: t(locale, 'validation.minChars').replace('{{min}}', '10'),
+  invalidEmail: t(locale, 'validation.invalidEmail'),
+  invalidJson: t(locale, 'validation.invalidJson'),
+  selectOption: t(locale, 'validation.selectOption'),
+})} />
+
+<script>
+  import { supabase } from '@/lib/supabase';
+
+  const msgs = JSON.parse(document.getElementById('suggest-msgs')!.textContent!) as Record<string, string>;
+
+  const form = document.getElementById('suggest-form') as HTMLFormElement;
+  const nameInput = document.getElementById('zone-name') as HTMLInputElement;
+  const citySelect = document.getElementById('zone-city') as HTMLSelectElement;
+  const cityOtherInput = document.getElementById('zone-city-other') as HTMLInputElement;
+  const motivationInput = document.getElementById('zone-motivation') as HTMLTextAreaElement;
+  const attendanceInput = document.getElementById('zone-attendance') as HTMLSelectElement;
+  const boundaryInput = document.getElementById('zone-boundary') as HTMLInputElement;
+  const emailInput = document.getElementById('zone-email') as HTMLInputElement;
+  const filenameDisplay = document.getElementById('boundary-filename')!;
+  const boundaryValid = document.getElementById('boundary-valid')!;
+  const successMsg = document.getElementById('suggest-success')!;
+  const errorMsg = document.getElementById('suggest-error')!;
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  let parsedBoundary: unknown = null;
+
+  // Toggle the "other" city text input when the dropdown changes
+  citySelect.addEventListener('change', () => {
+    if (citySelect.value === '__other__') {
+      cityOtherInput.classList.remove('hidden');
+      cityOtherInput.required = true;
+    } else {
+      cityOtherInput.classList.add('hidden');
+      cityOtherInput.required = false;
+      cityOtherInput.value = '';
+    }
+  });
+
+  function showError(field: string, message: string) {
+    const el = document.querySelector(`.field-error[data-field="${field}"]`) as HTMLElement | null;
+    if (el) {
+      el.textContent = message;
+      el.classList.remove('hidden');
+    }
+  }
+
+  function clearErrors() {
+    document.querySelectorAll('.field-error').forEach((el) => el.classList.add('hidden'));
+  }
+
+  boundaryInput.addEventListener('change', () => {
+    const file = boundaryInput.files?.[0];
+    if (!file) return;
+
+    filenameDisplay.textContent = file.name;
+    filenameDisplay.classList.remove('text-muted');
+    filenameDisplay.classList.add('text-foreground');
+    boundaryValid.classList.add('hidden');
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        parsedBoundary = JSON.parse(reader.result as string);
+        boundaryValid.classList.remove('hidden');
+        document.querySelector('.field-error[data-field="zone-boundary"]')?.classList.add('hidden');
+      } catch {
+        parsedBoundary = null;
+        showError('zone-boundary', msgs.invalidJson);
+      }
+    };
+    reader.readAsText(file);
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearErrors();
+    successMsg.classList.add('hidden');
+    errorMsg.classList.add('hidden');
+
+    let valid = true;
+
+    if (nameInput.value.trim().length < 2) {
+      showError('zone-name', msgs.minChars2);
+      valid = false;
+    }
+    if (!citySelect.value) {
+      showError('zone-city', msgs.selectOption);
+      valid = false;
+    } else if (citySelect.value === '__other__' && cityOtherInput.value.trim().length < 2) {
+      showError('zone-city', msgs.minChars2);
+      valid = false;
+    }
+    if (motivationInput.value.trim().length < 10) {
+      showError('zone-motivation', msgs.minChars10);
+      valid = false;
+    }
+    if (!attendanceInput.value) {
+      showError('zone-attendance', msgs.selectOption);
+      valid = false;
+    }
+    if (!parsedBoundary) {
+      showError('zone-boundary', parsedBoundary === null && boundaryInput.files?.length ? msgs.invalidJson : msgs.required);
+      valid = false;
+    }
+    if (!emailRegex.test(emailInput.value.trim())) {
+      showError('zone-email', msgs.invalidEmail);
+      valid = false;
+    }
+
+    if (!valid) return;
+
+    // Resolve the city_id: use selected ID or create via the RPC for "other"
+    let cityId: string;
+    if (citySelect.value === '__other__') {
+      const { data, error: rpcError } = await supabase.rpc('get_or_create_city', {
+        city_name: cityOtherInput.value.trim(),
+      });
+      if (rpcError || !data) {
+        errorMsg.classList.remove('hidden');
+        return;
+      }
+      cityId = data as string;
+    } else {
+      cityId = citySelect.value;
+    }
+
+    const { error } = await supabase.from('zone_suggestions').insert({
+      name: nameInput.value.trim(),
+      city_id: cityId,
+      motivation: motivationInput.value.trim(),
+      attendance: attendanceInput.value,
+      boundary: parsedBoundary,
+      submitted_by_email: emailInput.value.trim(),
+    });
+
+    if (error) {
+      errorMsg.classList.remove('hidden');
+      return;
+    }
+
+    form.classList.add('hidden');
+    successMsg.classList.remove('hidden');
+  });
+</script>

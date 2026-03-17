@@ -39,3 +39,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Astro website
+web/dist/
+web/node_modules/
+web/.astro/

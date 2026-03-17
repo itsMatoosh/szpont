@@ -1,0 +1,25 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import ZoneSuggestionForm from '@/components/ZoneSuggestionForm.astro';
+import { t, locales } from '@/i18n/utils';
+import type { Locale } from '@/i18n/utils';
+import { supabase } from '@/lib/supabase';
+
+export async function getStaticPaths() {
+  const { data: cities } = await supabase
+    .from('cities')
+    .select('id, name')
+    .order('name');
+
+  return locales.map((l) => ({
+    params: { locale: l === 'en' ? undefined : l },
+    props: { locale: l, cities: cities ?? [] },
+  }));
+}
+
+const { locale, cities } = Astro.props as { locale: Locale; cities: { id: string; name: string }[] };
+---
+
+<Layout locale={locale} title={`${t(locale, 'suggestZone.title')} — Szpont`}>
+  <ZoneSuggestionForm locale={locale} cities={cities} />
+</Layout>

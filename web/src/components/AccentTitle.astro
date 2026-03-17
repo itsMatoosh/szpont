@@ -1,0 +1,33 @@
+---
+/**
+ * Renders a title with an accent-colored keyword, mirroring the mobile app's AccentTitle.
+ * Supports optional text before, the accent word, and optional text after.
+ */
+interface Props {
+  before?: string;
+  accent: string;
+  after?: string;
+  large?: boolean;
+}
+
+const { before, accent, after, large } = Astro.props;
+const sizeClasses = large
+  ? 'text-3xl md:text-5xl leading-tight'
+  : 'text-2xl md:text-4xl leading-tight';
+---
+
+<h2 class={`font-bold text-center ${sizeClasses}`}>
+  {before && <span class="text-foreground">{before}</span>}
+  <span class="text-accent accent-outlined">{accent}</span>
+  {after && <span class="text-foreground">{after}</span>}
+</h2>
+
+<style>
+  /* Black outline on accent text in light mode, matching the mobile app's AccentTitle outlined prop */
+  @media (prefers-color-scheme: light) {
+    .accent-outlined {
+      -webkit-text-stroke: 3px #000;
+      paint-order: stroke fill;
+    }
+  }
+</style>

@@ -1,0 +1,20 @@
+---
+import type { Locale } from '@/i18n/utils';
+import { t } from '@/i18n/utils';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<footer class="py-12 px-5 md:px-8 flex flex-col items-center gap-6 border-t border-border">
+  <a
+    href="#hero"
+    class="min-h-[48px] leading-[48px] px-8 rounded-xl bg-accent text-on-accent font-semibold text-base text-center hover:opacity-90 transition-opacity"
+  >
+    {t(locale, 'footer.joinWaitlist')}
+  </a>
+  <p class="text-muted text-sm">{t(locale, 'footer.copyright')}</p>
+</footer>
