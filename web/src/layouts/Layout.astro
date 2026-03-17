@@ -1,6 +1,7 @@
 ---
 import type { Locale } from '@/i18n/utils';
 import { t, localePath } from '@/i18n/utils';
+import Analytics from '@vercel/analytics/astro'
 
 interface Props {
   locale: Locale;
@@ -45,6 +46,6 @@ const currentPath = Astro.url.pathname.replace(/^\/pl/, '') || '/';
   </head>
   <body class="bg-background text-foreground min-h-screen font-sans antialiased">
     <slot />
-    <script defer src="/_vercel/insights/script.js"></script>
+    <Analytics />
   </body>
 </html>
