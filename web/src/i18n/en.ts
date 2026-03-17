@@ -98,6 +98,7 @@ export const en = {
 
   footer: {
     joinWaitlist: 'join the waitlist',
+    instagram: 'follow us on Instagram @szpont.app',
     copyright: '© 2026 Szpont. all rights reserved.',
   },
 } as const;

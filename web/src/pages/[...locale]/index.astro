@@ -44,13 +44,3 @@ const { locale, cities } = Astro.props as { locale: Locale; cities: typeof Astro
   <ZonesSection locale={locale} cities={cities ?? []} />
   <FooterSection locale={locale} />
 </Layout>
-
-<script>
-  // Redirect Polish-speaking visitors to /pl/ on first visit
-  if (!sessionStorage.getItem('lang-redirected')) {
-    sessionStorage.setItem('lang-redirected', '1');
-    if (navigator.language.startsWith('pl') && !window.location.pathname.startsWith('/pl')) {
-      window.location.href = '/pl/';
-    }
-  }
-</script>

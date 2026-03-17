@@ -98,6 +98,7 @@ export const pl = {
 
   footer: {
     joinWaitlist: 'dołącz do listy',
+    instagram: 'obserwuj nas na Instagramie @szpont.app',
     copyright: '© 2026 Szpont. wszelkie prawa zastrzeżone.',
   },
 } as const;

@@ -1,0 +1,22 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "header",
+          "key": "accept-language",
+          "value": "^pl.*"
+        }
+      ],
+      "missing": [
+        {
+          "type": "cookie",
+          "key": "lang"
+        }
+      ],
+      "destination": "/pl/",
+      "permanent": false
+    }
+  ]
+}

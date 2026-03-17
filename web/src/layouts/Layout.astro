@@ -40,6 +40,10 @@ const currentPath = Astro.url.pathname.replace(/^\/pl/, '') || '/';
     <link rel="alternate" hreflang="en" href={currentPath} />
     <link rel="alternate" hreflang="pl" href={localePath('pl', currentPath)} />
 
+    <script is:inline define:vars={{ locale }}>
+      document.cookie = `lang=${locale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+    </script>
+
     <style is:global>
       @import '../styles/global.css';
     </style>
