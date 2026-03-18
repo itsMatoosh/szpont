@@ -34,8 +34,6 @@ export function useGeofencingSetup(backgroundSecret: string | null): boolean {
       return;
     }
 
-    setIsReady(false);
-
     const adapter = getBackgroundLocationAdapter();
     adapter
       .ready({

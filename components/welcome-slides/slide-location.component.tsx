@@ -96,6 +96,14 @@ export function SlideLocation() {
   const fgGranted = fgPermission.status === 'granted';
   const bgGranted = bgPermission.status === 'granted';
 
+  // When permanently denied, tapping should open device Settings instead of re-requesting
+  const handleFgPress = fgPermission.status === 'denied'
+    ? fgPermission.openSettings
+    : fgPermission.request;
+  const handleBgPress = bgPermission.status === 'denied'
+    ? bgPermission.openSettings
+    : bgPermission.request;
+
   // Determine which row is the topmost uncompleted one to highlight
   const highlightFg = !fgGranted;
   const highlightBg = fgGranted && !bgGranted;
@@ -127,7 +135,7 @@ export function SlideLocation() {
           highlight={highlightFg}
           title={t('welcome.slide6PermForeground')}
           description={t('welcome.slide6PermForegroundDesc')}
-          onPress={fgPermission.request}
+          onPress={handleFgPress}
         />
         <PermissionCheckRow
           granted={bgGranted}
@@ -135,7 +143,7 @@ export function SlideLocation() {
           highlight={highlightBg}
           title={t('welcome.slide6PermBackground')}
           description={t('welcome.slide6PermBackgroundDesc')}
-          onPress={bgPermission.request}
+          onPress={handleBgPress}
         />
         {Platform.OS === 'android' && (
           <PermissionCheckRow
