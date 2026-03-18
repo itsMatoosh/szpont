@@ -1,7 +1,8 @@
 {
   "common": {
     "continue": "dalej",
-    "back": "wróć"
+    "back": "wróć",
+    "cancel": "Anuluj"
   },
   "tabs": {
     "map": "Mapa",
@@ -90,5 +91,22 @@
     "slide6PermBatteryDesc": "upewnij się, że Android nie wyłączy aplikacji, gdy jesteś w strefie",
     "slide6PermMotion": "detekcja ruchu",
     "slide6PermMotionDesc": "używamy detekcji ruchu, by oszczędzać baterię telefonu"
+  },
+  "permissionDialog": {
+    "openSettings": {
+      "button": "Otwórz ustawienia"
+    }
+  },
+  "backgroundLocationPermission": {
+    "openSettings": {
+      "title": "Włącz lokalizację w tle",
+      "description": "W ustawieniach aplikacji, ustaw opcję 'Miejsce' na 'Zawsze', a potem wróć do aplikacji."
+    }
+  },
+  "foregroundLocationPermission": {
+    "openSettings": {
+      "title": "Włącz lokalizację",
+      "description": "W ustawieniach aplikacji, ustaw opcję 'Miejsce' na 'Zawsze', a potem wróć do aplikacji."
+    }
   }
 }

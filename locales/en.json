@@ -1,7 +1,8 @@
 {
   "common": {
     "continue": "continue",
-    "back": "back"
+    "back": "back",
+    "cancel": "Cancel"
   },
   "tabs": {
     "map": "Map",
@@ -89,5 +90,22 @@
     "slide6PermBatteryDesc": "make sure that the app won't get disabled by Android",
     "slide6PermMotion": "motion detection",
     "slide6PermMotionDesc": "we use motion detection to optimize phone battery usage"
+  },
+  "backgroundLocationPermission": {
+    "openSettings": {
+      "description": "In the app settings set the 'Location' option to 'Always' and come back to the app.",
+      "title": "Enable Background Location"
+    }
+  },
+  "foregroundLocationPermission": {
+    "openSettings": {
+      "title": "Enable Location",
+      "description": "In the app settings set the 'Location' option to 'Always' and come back to the app."
+    }
+  },
+  "permissionDialog": {
+    "openSettings": {
+      "button": "Open Settings"
+    }
   }
 }
