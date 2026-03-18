@@ -1,6 +1,7 @@
 ---
 import type { Locale } from '@/i18n/utils';
-import { t, localePath } from '@/i18n/utils';
+import { t } from '@/i18n/utils';
+import { getRelativeLocaleUrl } from 'astro:i18n';
 import { VISITOR_COOKIE_SCRIPT } from '@/lib/visitor';
 import Analytics from '@vercel/analytics/astro'
 
@@ -13,7 +14,7 @@ interface Props {
 const { locale, title, description } = Astro.props;
 const pageTitle = title ?? t(locale, 'meta.title');
 const pageDescription = description ?? t(locale, 'meta.description');
-const currentPath = Astro.url.pathname.replace(/^\/pl/, '') || '/';
+const basePath = Astro.url.pathname.replace(/^\/pl/, '') || '/';
 ---
 
 <!doctype html>
@@ -38,12 +39,8 @@ const currentPath = Astro.url.pathname.replace(/^\/pl/, '') || '/';
       rel="stylesheet"
     />
 
-    <link rel="alternate" hreflang="en" href={currentPath} />
-    <link rel="alternate" hreflang="pl" href={localePath('pl', currentPath)} />
-
-    <script is:inline define:vars={{ locale }}>
-      document.cookie = `lang=${locale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
-    </script>
+    <link rel="alternate" hreflang="en" href={getRelativeLocaleUrl('en', basePath)} />
+    <link rel="alternate" hreflang="pl" href={getRelativeLocaleUrl('pl', basePath)} />
     <script is:inline set:html={VISITOR_COOKIE_SCRIPT} />
 
     <style is:global>

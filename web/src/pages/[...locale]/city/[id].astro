@@ -1,9 +1,10 @@
 ---
 import Layout from '@/layouts/Layout.astro';
-import { t, localePath, localeFromParam } from '@/i18n/utils';
+import { t, type Locale } from '@/i18n/utils';
+import { getRelativeLocaleUrl } from 'astro:i18n';
 import { supabase } from '@/lib/supabase';
 
-const locale = localeFromParam(Astro.params.locale);
+const locale = (Astro.currentLocale ?? 'en') as Locale;
 const cityId = Astro.params.id;
 
 const [{ data: city }, { data: zones }, { data: suggestions }] = await Promise.all([
@@ -12,7 +13,7 @@ const [{ data: city }, { data: zones }, { data: suggestions }] = await Promise.a
   supabase.from('zone_suggestions').select('id, name, boundary').eq('city_id', cityId),
 ]);
 
-if (!city) return Astro.redirect(localePath(locale, '/'));
+if (!city) return Astro.redirect(getRelativeLocaleUrl(locale, '/'));
 ---
 
 <Layout locale={locale} title={`${city.name} — Szpont`}>
@@ -21,7 +22,7 @@ if (!city) return Astro.redirect(localePath(locale, '/'));
 
     <!-- Back button -->
     <a
-      href={localePath(locale, '/')}
+      href={getRelativeLocaleUrl(locale, '/')}
       class="absolute top-4 left-4 z-10 flex items-center gap-2 bg-surface/90 backdrop-blur border border-border rounded-xl px-4 py-2 text-foreground font-semibold text-sm hover:border-accent transition-colors"
     >
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
@@ -50,7 +51,7 @@ if (!city) return Astro.redirect(localePath(locale, '/'));
 
     <!-- Floating suggest button -->
     <a
-      href={localePath(locale, '/suggest-zone')}
+      href={getRelativeLocaleUrl(locale, '/suggest-zone')}
       class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 min-h-[48px] leading-[48px] px-8 rounded-full bg-accent text-on-accent font-semibold text-base text-center shadow-lg hover:opacity-90 transition-opacity whitespace-nowrap"
     >
       {t(locale, 'cityMap.suggestButton')}

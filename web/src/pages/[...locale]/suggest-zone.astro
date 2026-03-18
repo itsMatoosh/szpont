@@ -1,10 +1,10 @@
 ---
 import Layout from '@/layouts/Layout.astro';
 import ZoneSuggestionForm from '@/components/ZoneSuggestionForm.astro';
-import { t, localeFromParam } from '@/i18n/utils';
+import { t, type Locale } from '@/i18n/utils';
 import { supabase } from '@/lib/supabase';
 
-const locale = localeFromParam(Astro.params.locale);
+const locale = (Astro.currentLocale ?? 'en') as Locale;
 
 const { data: cities } = await supabase
   .from('cities')

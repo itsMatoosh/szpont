@@ -5,10 +5,10 @@ import FeatureSections from '@/components/FeatureSections.astro';
 import ZonesSection from '@/components/ZonesSection.astro';
 import FooterSection from '@/components/FooterSection.astro';
 import { supabase } from '@/lib/supabase';
-import { localeFromParam } from '@/i18n/utils';
+import type { Locale } from '@/i18n/utils';
 import { getVisitorId } from '@/lib/visitor';
 
-const locale = localeFromParam(Astro.params.locale);
+const locale = (Astro.currentLocale ?? 'en') as Locale;
 const visitorId = getVisitorId(Astro.cookies);
 
 interface ZoneRow {

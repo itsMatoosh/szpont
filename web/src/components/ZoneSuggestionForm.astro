@@ -1,6 +1,7 @@
 ---
 import type { Locale } from '@/i18n/utils';
-import { t, localePath } from '@/i18n/utils';
+import { t } from '@/i18n/utils';
+import { getRelativeLocaleUrl } from 'astro:i18n';
 
 interface CityOption {
   id: string;
@@ -20,7 +21,7 @@ const attendanceOptions = ['< 100', '100–200', '200–500', '500–1000', '100
 <div class="max-w-2xl w-full mx-auto px-5 md:px-8 py-16 md:py-24">
   <!-- Back link -->
   <a
-    href={localePath(locale, '/')}
+    href={getRelativeLocaleUrl(locale, '/')}
     class="inline-flex items-center gap-2 text-muted hover:text-accent transition-colors mb-8 text-sm font-semibold"
   >
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4">
