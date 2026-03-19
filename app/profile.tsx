@@ -3,7 +3,6 @@ import RNBounceable from '@freakycoder/react-native-bounceable';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar/avatar.component';
 import { useAuth } from '@/hooks/auth/use-auth.hook';
@@ -28,12 +27,11 @@ function formatJoinDate(createdAt: string, locale: string): string {
   return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 }
 
-/** Instagram-inspired profile screen showing the current user's info. */
+/** Profile screen presented as a formSheet showing the current user's info. */
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
   const { session } = useAuth();
   const { profile } = useProfileContext();
-  const insets = useSafeAreaInsets();
 
   const avatarUrl = session?.user.user_metadata?.avatar_url as string | undefined;
 
@@ -52,8 +50,7 @@ export default function ProfileScreen() {
   return (
     <ScrollView
       className="flex-1 bg-background"
-      contentContainerClassName="px-6 pb-12"
-      style={{ paddingTop: insets.top + 16 }}
+      contentContainerClassName="px-6 pb-12 pt-8"
     >
       {/* Header: avatar + friends stat */}
       <View className="flex-row items-center">

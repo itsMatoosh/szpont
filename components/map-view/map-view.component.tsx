@@ -5,12 +5,10 @@ import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reani
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CityLabel } from '@/components/city-label/city-label.component';
-import { ZoneInfoCard } from '@/components/zone-info-card/zone-info-card.component';
 import { ZoneMarker } from '@/components/zone-marker/zone-marker.component';
 import { useActiveZoneId } from '@/hooks/active-zone/use-active-zone-id.hook';
 import { useNearestCity } from '@/hooks/cities/use-nearest-city.hook';
 import { useZonesPresenceCounts } from '@/hooks/presence/use-zones-presence-counts.hook';
-import { useTabBarVisibility } from '@/hooks/tab-bar/tab-bar-visibility.context';
 import { useZonesByCity } from '@/hooks/zones/use-zones-by-city.hook';
 import Mapbox from '@/util/mapbox/mapbox.util';
 
@@ -41,14 +39,16 @@ const FLYTO_DURATION_MS = 1000;
 const FLYTO_HEADING = (ORBIT_STEP_DEG / ORBIT_INTERVAL_MS) * FLYTO_DURATION_MS;
 /** Minimum zoom when viewing a zone — Mapbox tiles lack smaller buildings below ~15. */
 const MIN_ZONE_ZOOM = 15;
-/** Estimated height (px) of the zone info card content, used as camera bottom padding. */
-const ZONE_CARD_HEIGHT_PX = 80;
 /** OMBR aspect ratio above which the orbit also slides along the major axis. */
 const SLIDE_ASPECT_THRESHOLD = 1.8;
 /** Fraction of the OMBR major-axis half-length used for each slide endpoint (0 = center, 1 = edge). */
 const SLIDE_INSET = 0.6;
 /** How much each bbox axis is expanded for zone-active maxBounds (0.05 = 5 % padding per side). */
 const ZONE_ACTIVE_BOUNDS_PADDING = 0.05;
+/** Fraction of screen height that the bottom sheet covers at its initial (lowest) detent. */
+const SHEET_INITIAL_DETENT = 0.15;
+/** Extra top padding below the safe area to clear overlays like the profile button and city label. */
+const TOP_OVERLAY_HEIGHT = 48;
 
 // ── Component ──────────────────────────────────────────────────────────────────
 
@@ -74,11 +74,12 @@ export function MapView() {
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
 
-  const { setHidden: setTabBarHidden } = useTabBarVisibility();
   const activeZoneId = useActiveZoneId();
 
+  /** Bottom sheet height in pixels at its lowest detent — used to keep content above the sheet. */
+  const sheetBottomPx = screenHeight * SHEET_INITIAL_DETENT;
+
   const [cameraMode, setCameraMode] = useState<CameraMode>({ mode: 'follow-user' });
-  const [displayMode, setDisplayMode] = useState<CameraMode>({ mode: 'follow-user' });
   const cameraRef = useRef<Mapbox.Camera>(null);
   const headingRef = useRef(0);
   const mapRef = useRef<InstanceType<typeof Mapbox.MapView> | null>(null);
@@ -101,33 +102,11 @@ export function MapView() {
     }
   }, [activeZoneId, city]);
 
-  // Sync displayMode to cameraMode with a delay on zone/zone-active → other
-  // so UI elements stay visible while the fly-out animation plays.
-  useEffect(() => {
-    if (cameraMode.mode === 'zone' || cameraMode.mode === 'zone-active') {
-      setDisplayMode(cameraMode);
-    } else {
-      const id = setTimeout(() => setDisplayMode(cameraMode), FLYTO_DURATION_MS);
-      return () => clearTimeout(id);
-    }
-  }, [cameraMode]);
-
-  // Hide the native tab bar while a zone is displayed
-  useEffect(() => {
-    setTabBarHidden(displayMode.mode === 'zone' || displayMode.mode === 'zone-active');
-  }, [displayMode.mode, setTabBarHidden]);
-
   // ── Derived camera values ────────────────────────────────────────────────
 
   const activeZone =
     cameraMode.mode === 'zone' || cameraMode.mode === 'zone-active'
       ? zones.find((z) => z.id === cameraMode.zoneId)
-      : undefined;
-
-  /** Zone resolved from displayMode — keeps card content stable during fly-out. */
-  const displayZone =
-    displayMode.mode === 'zone' || displayMode.mode === 'zone-active'
-      ? zones.find((z) => z.id === displayMode.zoneId)
       : undefined;
 
   /** Bounds and min-zoom used to constrain the camera in zone-active mode. */
@@ -244,17 +223,6 @@ export function MapView() {
   // follow-user and city modes are handled declaratively via Camera props.
   // zone and zone-active use imperative setCamera calls.
 
-  /** Bottom padding pushes the focal point up so it isn't hidden behind the info card. */
-  const zoneCameraPadding = useMemo(
-    () => ({
-      paddingTop: 0,
-      paddingLeft: 0,
-      paddingRight: 0,
-      paddingBottom: insets.bottom + ZONE_CARD_HEIGHT_PX,
-    }),
-    [insets.bottom],
-  );
-
   useEffect(() => {
     if (cameraMode.mode === 'follow-user' || cameraMode.mode === 'city') {
       headingRef.current = 0;
@@ -313,7 +281,6 @@ export function MapView() {
       heading: FLYTO_HEADING,
       animationDuration: FLYTO_DURATION_MS,
       animationMode: 'flyTo',
-      padding: zoneCameraPadding,
     });
 
     // Seed so the interval continues seamlessly from where the flyTo lands.
@@ -342,7 +309,6 @@ export function MapView() {
           heading: headingRef.current,
           animationDuration: 0,
           animationMode: 'moveTo',
-          padding: zoneCameraPadding,
         });
       }, ORBIT_INTERVAL_MS);
     }, FLYTO_DURATION_MS);
@@ -351,7 +317,7 @@ export function MapView() {
       clearTimeout(timeout);
       if (intervalId) clearInterval(intervalId);
     };
-  }, [cameraMode, zoneCamera, zoneActiveCamera, zoneCameraPadding]);
+  }, [cameraMode, zoneCamera, zoneActiveCamera]);
 
   // ── Zone markers (city view) ─────────────────────────────────────────────
 
@@ -370,9 +336,9 @@ export function MapView() {
       return { id: z.id, name: z.name, subText: '23 osoby', iconUrl: null, center };
     });
     const result = resolveOverlaps(raw, cityCamera.zoom, cityCamera.center, screenWidth, screenHeight, {
-      top: insets.top,
+      top: insets.top + TOP_OVERLAY_HEIGHT,
       right: insets.right,
-      bottom: insets.bottom,
+      bottom: insets.bottom + sheetBottomPx,
       left: insets.left,
     });
     return { zoneMarkers: result.markers, debugOverlay: result.debug };
@@ -427,13 +393,6 @@ export function MapView() {
     opacity: markerOpacity.value,
     pointerEvents: markerOpacity.value === 0 ? 'none' : 'auto',
   }));
-
-  // ── Handlers ─────────────────────────────────────────────────────────────
-
-  /** Return to city overview or follow-user — the camera effect handles the flyTo. */
-  const handleBack = useCallback(() => {
-    setCameraMode(city ? { mode: 'city' } : { mode: 'follow-user' });
-  }, [city]);
 
   const isZoneActive = cameraMode.mode === 'zone-active';
 
@@ -492,6 +451,7 @@ export function MapView() {
           zoomLevel={cameraMode.mode === 'city' && cityCamera ? cityCamera.zoom : undefined}
           pitch={cameraMode.mode === 'city' ? 0 : undefined}
           heading={cameraMode.mode === 'city' ? 0 : undefined}
+          padding={{ paddingTop: insets.top + TOP_OVERLAY_HEIGHT, paddingLeft: 0, paddingRight: 0, paddingBottom: insets.bottom + sheetBottomPx }}
           animationMode="flyTo"
           animationDuration={FLYTO_DURATION_MS}
         />
@@ -567,12 +527,6 @@ export function MapView() {
           topInset={insets.top}
         />
       )}
-
-      <ZoneInfoCard
-        visible={cameraMode.mode === 'zone'}
-        bottomInset={insets.bottom}
-        onClose={handleBack}
-      />
 
       {/* Debug overlay: shows the simulation's viewport boundary and marker bounding boxes */}
       {SHOW_DEBUG_OVERLAY && debugOverlay && (

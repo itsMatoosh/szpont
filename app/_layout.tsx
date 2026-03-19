@@ -144,7 +144,27 @@ function RootNavigator({ session, userId }: { session: unknown; userId: string |
       </Stack.Protected>
 
       <Stack.Protected guard={!!session && !!profile && locationReady}>
-        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="index" />
+        <Stack.Screen
+          name="sheet"
+          options={{
+            headerShown: false,
+            presentation: 'formSheet',
+            gestureEnabled: false,
+            sheetGrabberVisible: true,
+            contentStyle: { backgroundColor: 'transparent' },
+            sheetAllowedDetents: [0.15, 1],
+            sheetInitialDetentIndex: 0,
+            sheetLargestUndimmedDetentIndex: 0,
+          }}
+        />
+        <Stack.Screen
+          name="profile"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+          }}
+        />
         <Stack.Screen name="zone/[id]" />
         <Stack.Screen name="edit-profile" />
       </Stack.Protected>
