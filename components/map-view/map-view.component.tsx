@@ -367,7 +367,7 @@ export function MapView() {
       const center: [number, number] = bbox
         ? [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]
         : [0, 0];
-      return { id: z.id, name: z.name, subText: '23 osoby', iconUrl: z.icon_url, center };
+      return { id: z.id, name: z.name, subText: '23 osoby', iconUrl: null, center };
     });
     const result = resolveOverlaps(raw, cityCamera.zoom, cityCamera.center, screenWidth, screenHeight, {
       top: insets.top,
