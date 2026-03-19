@@ -18,6 +18,12 @@
     "signOut": "Sign Out",
     "friends": "Friends"
   },
+  "editProfile": {
+    "title": "edit profile",
+    "save": "save",
+    "bioLabel": "bio",
+    "bioPlaceholder": "tell us about yourself"
+  },
   "auth": {
     "signInWithGoogle": "Sign in with Google",
     "signInWithApple": "Sign in with Apple",
@@ -38,6 +44,8 @@
     "dobDay": "DD",
     "dobMonth": "MM",
     "dobYear": "YYYY",
+    "photosTitle": "show yourself!",
+    "photosSubtitle": "add at least 3 photos.",
     "creatingProfile": "creating your profile",
     "createProfile": "create profile",
     "errors": {

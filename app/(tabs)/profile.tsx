@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import RNBounceable from '@freakycoder/react-native-bounceable';
+import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { Alert, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -78,7 +79,7 @@ export default function ProfileScreen() {
       )}
 
       {/* Edit profile button */}
-      <RNBounceable onPress={() => {}} className="mt-4">
+      <RNBounceable onPress={() => router.push('/edit-profile')} className="mt-4">
         <View className="items-center rounded-xl border border-border py-2">
           <Text className="text-sm font-semibold text-foreground">
             {t('profile.editProfile')}

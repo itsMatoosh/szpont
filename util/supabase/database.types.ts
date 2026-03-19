@@ -258,6 +258,41 @@ export type Database = {
         }
         Relationships: []
       }
+      user_profile_media: {
+        Row: {
+          id: string
+          user_id: string
+          type: Database["public"]["Enums"]["media_type"]
+          position: number
+          storage_path: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type?: Database["public"]["Enums"]["media_type"]
+          position: number
+          storage_path: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: Database["public"]["Enums"]["media_type"]
+          position?: number
+          storage_path?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_profile_media_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           bio: string
@@ -707,6 +742,10 @@ export type Database = {
       }
       postgis_version: { Args: never; Returns: string }
       postgis_wagyu_version: { Args: never; Returns: string }
+      reorder_user_profile_media: {
+        Args: { p_ordering: Json }
+        Returns: undefined
+      }
       register_device: {
         Args: {
           p_device_id?: string
@@ -1320,7 +1359,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      media_type: "photo"
     }
     CompositeTypes: {
       geometry_dump: {
@@ -1455,6 +1494,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      media_type: ["photo"],
+    },
   },
 } as const

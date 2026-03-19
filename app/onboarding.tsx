@@ -1,10 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import RNBounceable from '@freakycoder/react-native-bounceable';
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
-  ActivityIndicator,
   Alert,
   Dimensions,
   KeyboardAvoidingView,
@@ -12,10 +11,8 @@ import {
   NativeSyntheticEvent,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
-  useColorScheme,
   View,
 } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
@@ -23,43 +20,42 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import { AnimatedSlide } from '@/components/animated-slide/animated-slide.component';
+import { StepDateOfBirth } from '@/components/onboarding-steps/step-date-of-birth.component';
+import { StepDisplayName } from '@/components/onboarding-steps/step-display-name.component';
+import { StepLoading } from '@/components/onboarding-steps/step-loading.component';
+import { StepPhotos } from '@/components/onboarding-steps/step-photos.component';
+import { StepUsername } from '@/components/onboarding-steps/step-username.component';
 import { useAuth } from '@/hooks/auth/use-auth.hook';
+import { useProfilePhotos } from '@/hooks/photos/use-profile-photos.hook';
 import { useProfileContext } from '@/hooks/profile/profile.context';
+import { nunitoSemiBold } from '@/util/fonts/fonts.util';
 import {
   getOnboardingFormSchema,
   type OnboardingFormInput,
   type OnboardingFormValues,
 } from '@/util/onboarding/onboarding.util';
 import { supabase } from '@/util/supabase/supabase.util';
-import { Colors } from '@/util/theme/theme.util';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const TOTAL_SLIDES = 4;
-const LAST_FORM_SLIDE = 2;
+const LAST_FORM_SLIDE = 3;
 
-const nunitoBold = { fontFamily: 'Nunito_700Bold' } as const;
-const nunitoSemiBold = { fontFamily: 'Nunito_600SemiBold' } as const;
-const nunitoRegular = { fontFamily: 'Nunito_400Regular' } as const;
-
-const styles = StyleSheet.create({
-  inputBase: { fontSize: 24, textAlign: 'center' as const, fontFamily: 'Nunito_400Regular' },
-  inputLarge: { fontSize: 30, textAlign: 'center' as const, fontFamily: 'Nunito_700Bold' },
-});
-
-/** Multi-step onboarding wizard collecting display name, username, and date of birth. */
+/** Multi-step onboarding wizard collecting display name, username, date of birth, and photos. */
 export default function OnboardingScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { refetch } = useProfileContext();
+  const { photos, pickPhoto, removePhoto, reorderPhotos, uploadAll } =
+    useProfilePhotos(user?.id ?? null);
   const insets = useSafeAreaInsets();
-  const scheme = useColorScheme();
-  const foreground = scheme === 'dark' ? '#F5F5F5' : '#262626';
 
   const scrollX = useSharedValue(0);
   const scrollRef = useRef<ScrollView>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
+  const displayNameRef = useRef<TextInput>(null);
+  const usernameRef = useRef<TextInput>(null);
+  const dayRef = useRef<TextInput>(null);
   const monthRef = useRef<TextInput>(null);
   const yearRef = useRef<TextInput>(null);
 
@@ -89,7 +85,7 @@ export default function OnboardingScreen() {
   const month = watch('month');
   const year = watch('year');
 
-  /** Button enabled only when the current step has non-empty input and no validation errors. */
+  /** Button enabled only when the current step has valid input. */
   const canContinue = (() => {
     switch (currentPage) {
       case 0:
@@ -99,10 +95,25 @@ export default function OnboardingScreen() {
       case 2:
         return day.length === 2 && month.length === 2 && year.length === 4
           && !errors.day && !errors.month && !errors.year;
+      case 3:
+        return photos.length >= 3;
       default:
         return false;
     }
   })();
+
+  // Focus the primary input of the active slide after the scroll animation settles
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      switch (currentPage) {
+        case 0: displayNameRef.current?.focus(); break;
+        case 1: usernameRef.current?.focus(); break;
+        case 2: dayRef.current?.focus(); break;
+        case 3: break;
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [currentPage]);
 
   const isFormSlide = currentPage <= LAST_FORM_SLIDE;
   const isLastFormSlide = currentPage === LAST_FORM_SLIDE;
@@ -114,6 +125,7 @@ export default function OnboardingScreen() {
     scrollRef.current?.scrollTo({ x: 0, animated: true });
   }
 
+  /** Handles the scroll event and updates the current page. */
   const handleScroll = useCallback(
     (event: NativeSyntheticEvent<NativeScrollEvent>) => {
       const x = event.nativeEvent.contentOffset.x;
@@ -143,6 +155,13 @@ export default function OnboardingScreen() {
       return;
     }
 
+    try {
+      await uploadAll();
+    } catch (e: unknown) {
+      handleError((e as Error).message);
+      return;
+    }
+
     await refetch();
   }
 
@@ -165,6 +184,7 @@ export default function OnboardingScreen() {
     scrollRef.current?.scrollTo({ x: (currentPage + 1) * SCREEN_WIDTH, animated: true });
   }
 
+  /** Handles the back button press and scrolls to the previous slide. */
   function handleBack() {
     if (currentPage > 0) {
       scrollRef.current?.scrollTo({ x: (currentPage - 1) * SCREEN_WIDTH, animated: true });
@@ -186,7 +206,6 @@ export default function OnboardingScreen() {
           )}
         </View>
 
-        {/* Slides */}
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -198,174 +217,46 @@ export default function OnboardingScreen() {
           bounces={false}
         >
           <AnimatedSlide index={0} scrollX={scrollX}>
-            <View style={{ flex: 1 }} className="px-8 justify-center items-center">
-              <Text className="text-3xl font-bold text-foreground mb-6 text-center" style={nunitoBold}>
-                {t('onboarding.nameTitle')}
-              </Text>
-              <View className="border-b-2 border-border pb-2 self-stretch">
-                <Controller
-                  control={control}
-                  name="displayName"
-                  render={({ field: { value, onChange, onBlur } }) => (
-                    <TextInput
-                      style={[styles.inputBase, { color: foreground }]}
-                      placeholder={t('onboarding.namePlaceholder')}
-                      placeholderTextColor="#8E8E8E"
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      autoFocus
-                      autoCapitalize="words"
-                      returnKeyType="next"
-                      onSubmitEditing={() => canContinue && handleContinue()}
-                    />
-                  )}
-                />
-              </View>
-              {errors.displayName && (
-                <Text className="text-sm text-red-500 mt-2" style={nunitoRegular}>
-                  {errors.displayName.message}
-                </Text>
-              )}
-            </View>
+            <StepDisplayName
+              control={control}
+              error={errors.displayName}
+              inputRef={displayNameRef}
+              canContinue={canContinue}
+              onSubmit={handleContinue}
+            />
           </AnimatedSlide>
 
           <AnimatedSlide index={1} scrollX={scrollX}>
-            <View style={{ flex: 1 }} className="px-8 justify-center items-center">
-              <Text className="text-3xl font-bold text-foreground mb-6 text-center" style={nunitoBold}>
-                {t('onboarding.usernameTitle')}
-              </Text>
-              <View className="flex-row items-center border-b-2 border-border pb-2 self-stretch justify-center">
-                <Text className="text-2xl text-muted" style={nunitoRegular}>@</Text>
-                <Controller
-                  control={control}
-                  name="username"
-                  render={({ field: { value, onChange, onBlur } }) => (
-                    <TextInput
-                      style={[styles.inputBase, { flex: 1, color: foreground }]}
-                      placeholder={t('onboarding.usernamePlaceholder')}
-                      placeholderTextColor="#8E8E8E"
-                      value={value}
-                      onChangeText={(text) => onChange(text.toLowerCase().replace(/\s/g, ''))}
-                      onBlur={onBlur}
-                      autoFocus
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      returnKeyType="next"
-                      onSubmitEditing={() => canContinue && handleContinue()}
-                    />
-                  )}
-                />
-              </View>
-              {errors.username && (
-                <Text className="text-sm text-red-500 mt-2" style={nunitoRegular}>
-                  {errors.username.message}
-                </Text>
-              )}
-            </View>
+            <StepUsername
+              control={control}
+              error={errors.username}
+              inputRef={usernameRef}
+              canContinue={canContinue}
+              onSubmit={handleContinue}
+            />
           </AnimatedSlide>
 
           <AnimatedSlide index={2} scrollX={scrollX}>
-            <View style={{ flex: 1 }} className="px-8 justify-center items-center">
-              <Text className="text-3xl font-bold text-foreground mb-6 text-center" style={nunitoBold}>
-                {t('onboarding.dobTitle')}
-              </Text>
-              <View className="flex-row gap-3 justify-center">
-                <View className="border-b-2 border-border pb-2" style={{ width: 64 }}>
-                  <Controller
-                    control={control}
-                    name="day"
-                    render={({ field: { value, onChange, onBlur } }) => (
-                      <TextInput
-                        style={[styles.inputLarge, { color: foreground }]}
-                        placeholder={t('onboarding.dobDay')}
-                        placeholderTextColor="#8E8E8E"
-                        value={value}
-                        onChangeText={(text) => {
-                          const digits = text.replace(/\D/g, '').slice(0, 2);
-                          onChange(digits);
-                          if (digits.length === 2) monthRef.current?.focus();
-                        }}
-                        onBlur={onBlur}
-                        keyboardType="number-pad"
-                        maxLength={2}
-                        autoFocus
-                      />
-                    )}
-                  />
-                </View>
-                <View className="border-b-2 border-border pb-2" style={{ width: 64 }}>
-                  <Controller
-                    control={control}
-                    name="month"
-                    render={({ field: { value, onChange, onBlur } }) => (
-                      <TextInput
-                        ref={(el) => {
-                          (monthRef as React.MutableRefObject<TextInput | null>).current = el;
-                        }}
-                        style={[styles.inputLarge, { color: foreground }]}
-                        placeholder={t('onboarding.dobMonth')}
-                        placeholderTextColor="#8E8E8E"
-                        value={value}
-                        onChangeText={(text) => {
-                          const digits = text.replace(/\D/g, '').slice(0, 2);
-                          onChange(digits);
-                          if (digits.length === 2) yearRef.current?.focus();
-                        }}
-                        onBlur={onBlur}
-                        keyboardType="number-pad"
-                        maxLength={2}
-                      />
-                    )}
-                  />
-                </View>
-                <View className="border-b-2 border-border pb-2" style={{ width: 96 }}>
-                  <Controller
-                    control={control}
-                    name="year"
-                    render={({ field: { value, onChange, onBlur } }) => (
-                      <TextInput
-                        ref={(el) => {
-                          (yearRef as React.MutableRefObject<TextInput | null>).current = el;
-                        }}
-                        style={[styles.inputLarge, { color: foreground }]}
-                        placeholder={t('onboarding.dobYear')}
-                        placeholderTextColor="#8E8E8E"
-                        value={value}
-                        onChangeText={(text) => onChange(text.replace(/\D/g, '').slice(0, 4))}
-                        onBlur={onBlur}
-                        keyboardType="number-pad"
-                        maxLength={4}
-                      />
-                    )}
-                  />
-                </View>
-              </View>
-              {errors.day && (
-                <Text className="text-sm text-red-500 mt-2" style={nunitoRegular}>
-                  {errors.day.message}
-                </Text>
-              )}
-              {errors.month && (
-                <Text className="text-sm text-red-500 mt-2" style={nunitoRegular}>
-                  {errors.month.message}
-                </Text>
-              )}
-              {errors.year && (
-                <Text className="text-sm text-red-500 mt-2" style={nunitoRegular}>
-                  {errors.year.message}
-                </Text>
-              )}
-            </View>
+            <StepDateOfBirth
+              control={control}
+              errors={{ day: errors.day, month: errors.month, year: errors.year }}
+              dayRef={dayRef}
+              monthRef={monthRef}
+              yearRef={yearRef}
+            />
           </AnimatedSlide>
 
           <AnimatedSlide index={3} scrollX={scrollX}>
-            <View style={{ flex: 1 }} className="px-8 justify-center items-center">
-              <ActivityIndicator size="large" style={{ marginBottom: 16 }} />
-              <Text className="text-xl text-foreground text-center" style={nunitoSemiBold}>
-                {t('onboarding.creatingProfile')}
-              </Text>
-            </View>
+            <StepPhotos
+              photos={photos}
+              onAdd={(pos) => pickPhoto(pos)}
+              onRemove={removePhoto}
+              onReorder={reorderPhotos}
+            />
+          </AnimatedSlide>
+
+          <AnimatedSlide index={4} scrollX={scrollX}>
+            <StepLoading />
           </AnimatedSlide>
         </ScrollView>
 
@@ -374,12 +265,10 @@ export default function OnboardingScreen() {
           <View className="px-8 pb-4">
             <RNBounceable onPress={handleContinue} disabled={!canContinue || submitting}>
               <View
-                className={`rounded-2xl py-4 items-center justify-center ${canContinue && !submitting ? 'bg-accent' : 'bg-border'
-                  }`}
+                className={`rounded-2xl py-4 items-center justify-center ${canContinue && !submitting ? 'bg-accent' : 'bg-border'}`}
               >
                 <Text
-                  className={`text-lg font-semibold ${canContinue && !submitting ? 'text-on-accent' : 'text-muted'
-                    }`}
+                  className={`text-lg font-semibold ${canContinue && !submitting ? 'text-on-accent' : 'text-muted'}`}
                   style={nunitoSemiBold}
                 >
                   {isLastFormSlide ? t('onboarding.createProfile') : t('common.continue')}

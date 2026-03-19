@@ -18,6 +18,12 @@
     "signOut": "Wyloguj się",
     "friends": "Znajomi"
   },
+  "editProfile": {
+    "title": "edytuj profil",
+    "save": "zapisz",
+    "bioLabel": "bio",
+    "bioPlaceholder": "opowiedz coś o sobie"
+  },
   "auth": {
     "signInWithGoogle": "Zaloguj się przez Google",
     "signInWithApple": "Zaloguj się przez Apple",
@@ -39,6 +45,8 @@
     "dobDay": "DD",
     "dobMonth": "MM",
     "dobYear": "RRRR",
+    "photosTitle": "pokaż się!",
+    "photosSubtitle": "dodaj co najmniej 3 zdjęcia.",
     "creatingProfile": "tworzenie profilu",
     "createProfile": "utwórz profil",
     "errors": {
@@ -54,8 +62,8 @@
       "dobMonthLength": "miesiąc musi mieć 2 cyfry",
       "dobYearLength": "rok musi mieć 4 cyfry",
       "dobInvalidDate": "podaj prawidłową datę",
-      "dobMinAge": "musisz mieć co najmniej {{age}} lat, żeby korzystać ze Szpontu",
-      "dobMaxAge": "musisz mieć co najwyżej {{age}} lat, żeby korzystać ze Szpontu"
+      "dobMinAge": "musisz mieć co najmniej {{age}} lat, żeby korzystać ze Szponta",
+      "dobMaxAge": "musisz mieć co najwyżej {{age}} lat, żeby korzystać ze Szponta"
     }
   },
   "liveActivity": {
