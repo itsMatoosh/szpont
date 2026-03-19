@@ -16,7 +16,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "app.szpont",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Choose photos for your profile."
       }
     },
     "android": {
@@ -52,8 +53,8 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "We use your location to detect when you're in a Szpont zone.",
-          "locationWhenInUsePermission": "We use your location to show you nearby Szpont zones.",
+          "locationAlwaysAndWhenInUsePermission": "Szpont uses your location to automatically check you into meetup zones.",
+          "locationWhenInUsePermission": "Szpont uses your location to show you nearby meetup zones.",
           "isAndroidBackgroundLocationEnabled": true,
           "isIosBackgroundLocationEnabled": true
         }
@@ -73,6 +74,9 @@
         }
       ]
     ],
+    "locales": {
+      "pl": "./locales/ios/pl.json"
+    },
     "experiments": {
       "typedRoutes": true
     }

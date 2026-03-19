@@ -68,6 +68,7 @@ export function useProfilePhotos(userId: string | null) {
    * Server-side `process-photo` Edge Function re-validates regardless.
    */
   const pickPhoto = useCallback(async (position: number) => {
+    // Open the camera roll and let the user crop to 2:3
     let image;
     try {
       image = await ImageCropPicker.openPicker({

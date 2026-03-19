@@ -1,0 +1,6 @@
+{
+  "NSPhotoLibraryUsageDescription": "Wybierz zdjęcia do swojego profilu.",
+  "NSLocationWhenInUseUsageDescription": "Szpont używa Twojej lokalizacji, by pokazać Ci pobliskie strefy spotkań.",
+  "NSLocationAlwaysAndWhenInUseUsageDescription": "Szpont używa Twojej lokalizacji, by automatycznie meldować Cię w strefach spotkań.",
+  "NSMotionUsageDescription": "Szpont używa detekcji ruchu, by oszczędzać baterię podczas śledzenia lokalizacji w strefach spotkań."
+}
