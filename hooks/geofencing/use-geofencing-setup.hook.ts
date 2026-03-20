@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
-import { useNearestCity } from '@/hooks/cities/use-nearest-city.hook';
 import { useGeofencing } from '@/hooks/geofencing/use-geofencing.hook';
+import { useSelectedZoneContext } from '@/hooks/selected-zone/selected-zone.context';
 import { useLocationPermissionContext } from '@/hooks/location/location-permission.context';
 import { getBackgroundLocationAdapter } from '@/util/background-location/background-location.adapter';
 
@@ -20,7 +20,7 @@ import { getBackgroundLocationAdapter } from '@/util/background-location/backgro
 export function useGeofencingSetup(backgroundSecret: string | null): boolean {
   const [isReady, setIsReady] = useState(!backgroundSecret);
   const { backgroundStatus } = useLocationPermissionContext();
-  const { city } = useNearestCity();
+  const { nearestCity } = useSelectedZoneContext();
 
   // Ready the BG location adapter once we have both a secret and permission
   useEffect(() => {
@@ -52,7 +52,7 @@ export function useGeofencingSetup(backgroundSecret: string | null): boolean {
   }, [backgroundSecret, backgroundStatus]);
 
   // Start geofence monitoring when permission + city are resolved
-  useGeofencing(backgroundStatus === 'granted' ? city?.id : undefined);
+  useGeofencing(backgroundStatus === 'granted' ? nearestCity?.id : undefined);
 
   return isReady;
 }

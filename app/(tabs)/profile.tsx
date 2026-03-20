@@ -27,8 +27,8 @@ function formatJoinDate(createdAt: string, locale: string): string {
   return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
 }
 
-/** Profile screen presented as a formSheet showing the current user's info. */
-export default function ProfileScreen() {
+/** Profile tab: current user info, edit profile, and sign out. */
+export default function ProfileTabScreen() {
   const { t, i18n } = useTranslation();
   const { session } = useAuth();
   const { profile } = useProfileContext();
@@ -52,7 +52,6 @@ export default function ProfileScreen() {
       className="flex-1 bg-background"
       contentContainerClassName="px-6 pb-12 pt-8"
     >
-      {/* Header: avatar + friends stat */}
       <View className="flex-row items-center">
         <Avatar uri={avatarUrl} name={profile.display_name} size={88} />
 
@@ -62,7 +61,6 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      {/* Name, age, username */}
       <View className="mt-4">
         <Text className="text-lg font-bold text-foreground">
           {profile.display_name}, {age}
@@ -70,28 +68,24 @@ export default function ProfileScreen() {
         <Text className="text-sm text-muted">@{profile.username}</Text>
       </View>
 
-      {/* Bio */}
       {profile.bio.length > 0 && (
         <Text className="mt-2 text-base text-foreground">{profile.bio}</Text>
       )}
 
-      {/* Edit profile button */}
-      <RNBounceable onPress={() => router.push('/edit-profile')} className="mt-4">
-        <View className="items-center rounded-xl border border-border py-2">
+      <RNBounceable onPress={() => router.push('/edit-profile')}>
+        <View className="mt-4 items-center rounded-xl border border-border py-2">
           <Text className="text-sm font-semibold text-foreground">
             {t('profile.editProfile')}
           </Text>
         </View>
       </RNBounceable>
 
-      {/* Member since */}
       <Text className="mt-6 text-center text-sm text-muted">
         {t('profile.memberSince', { date: joinDate })}
       </Text>
 
-      {/* Sign out */}
-      <RNBounceable onPress={handleSignOut} className="mt-8">
-        <View className="flex-row items-center justify-center gap-2 rounded-xl bg-surface py-3">
+      <RNBounceable onPress={handleSignOut}>
+        <View className="mt-8 flex-row items-center justify-center gap-2 rounded-xl bg-surface py-3">
           <Ionicons name="log-out-outline" size={20} color="#8E8E8E" />
           <Text className="text-base font-semibold text-muted">
             {t('profile.signOut')}

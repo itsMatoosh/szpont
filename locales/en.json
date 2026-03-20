@@ -7,6 +7,19 @@
   "home": {
     "title": "Home"
   },
+  "sheet": {
+    "squadTitle": "your squad"
+  },
+  "tabs": {
+    "swipe": "Swipe",
+    "map": "Map",
+    "squad": "Your Squad",
+    "profile": "Profile"
+  },
+  "swipeTab": {
+    "title": "swipe",
+    "subtitle": "discover people nearby — coming soon."
+  },
   "profile": {
     "title": "Profile",
     "editProfile": "Edit Profile",
@@ -27,9 +40,15 @@
     "disclaimer": "By signing in you agree to our Terms of Service and Privacy Policy."
   },
   "map": {
+    "showCityOverview": "show city overview",
+    "followMyLocation": "follow my location",
+    "orbitCurrentZone": "orbit current zone",
+    "backToFollowFromZone": "back to following you",
     "backToCity": "Back to city view",
     "presenceCount_one": "{{count}} person",
-    "presenceCount_other": "{{count}} people"
+    "presenceCount_other": "{{count}} people",
+    "horizonDistanceMeters": "{{meters}} m",
+    "horizonDistanceKilometers": "{{km}} km"
   },
   "onboarding": {
     "nameTitle": "what's your name?",

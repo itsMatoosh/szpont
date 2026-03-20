@@ -14,6 +14,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { useColorScheme } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useAuth } from '@/hooks/auth/use-auth.hook';
 import { useDeviceRegistration } from '@/hooks/device/use-device-registration.hook';
@@ -32,6 +33,7 @@ import {
 } from '@/hooks/notifications/notification-permission.context';
 import { useNotificationsSetup } from '@/hooks/notifications/use-notifications-setup.hook';
 import { ProfileProvider, useProfileContext } from '@/hooks/profile/profile.context';
+import { SelectedZoneProvider } from '@/hooks/selected-zone/selected-zone.context';
 import { WelcomeProvider, useWelcome } from '@/hooks/welcome/welcome.context';
 
 import { Loader } from '@/components/loader/loader.component';
@@ -83,21 +85,25 @@ export default function RootLayout() {
   if (isLoading || !fontsLoaded || !locationSnapshot || !notificationSnapshot || needsVideoGate) return <Loader />;
 
   return (
-    <ThemeProvider value={scheme === 'dark' ? darkTheme : lightTheme}>
-      <QueryClientProvider client={queryClient}>
-        <ProfileProvider user={user}>
-          <LocationPermissionProvider initialSnapshot={locationSnapshot}>
-            <NotificationPermissionProvider initialSnapshot={notificationSnapshot}>
-              <CurrentLocationProvider>
-                <WelcomeProvider>
-                  <RootNavigator session={session} userId={user?.id ?? null} />
-                </WelcomeProvider>
-              </CurrentLocationProvider>
-            </NotificationPermissionProvider>
-          </LocationPermissionProvider>
-        </ProfileProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider value={scheme === 'dark' ? darkTheme : lightTheme}>
+        <QueryClientProvider client={queryClient}>
+          <ProfileProvider user={user}>
+            <LocationPermissionProvider initialSnapshot={locationSnapshot}>
+              <NotificationPermissionProvider initialSnapshot={notificationSnapshot}>
+                <CurrentLocationProvider>
+                  <WelcomeProvider>
+                    <SelectedZoneProvider>
+                      <RootNavigator session={session} userId={user?.id ?? null} />
+                    </SelectedZoneProvider>
+                  </WelcomeProvider>
+                </CurrentLocationProvider>
+              </NotificationPermissionProvider>
+            </LocationPermissionProvider>
+          </ProfileProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -144,27 +150,7 @@ function RootNavigator({ session, userId }: { session: unknown; userId: string |
       </Stack.Protected>
 
       <Stack.Protected guard={!!session && !!profile && locationReady}>
-        <Stack.Screen name="index" />
-        <Stack.Screen
-          name="sheet"
-          options={{
-            headerShown: false,
-            presentation: 'formSheet',
-            gestureEnabled: false,
-            sheetGrabberVisible: true,
-            contentStyle: { backgroundColor: 'transparent' },
-            sheetAllowedDetents: [0.15, 1],
-            sheetInitialDetentIndex: 0,
-            sheetLargestUndimmedDetentIndex: 0,
-          }}
-        />
-        <Stack.Screen
-          name="profile"
-          options={{
-            headerShown: false,
-            presentation: 'modal',
-          }}
-        />
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen name="zone/[id]" />
         <Stack.Screen name="edit-profile" />
       </Stack.Protected>

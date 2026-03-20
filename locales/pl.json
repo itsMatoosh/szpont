@@ -7,6 +7,19 @@
   "home": {
     "title": "Strona główna"
   },
+  "sheet": {
+    "squadTitle": "twoja ekipa"
+  },
+  "tabs": {
+    "swipe": "Poznawaj",
+    "map": "Mapa",
+    "squad": "Twoja Ekipa",
+    "profile": "Profil"
+  },
+  "swipeTab": {
+    "title": "poznawaj",
+    "subtitle": "odkrywaj ludzi w pobliżu — wkrótce."
+  },
   "profile": {
     "title": "Profil",
     "editProfile": "Edytuj profil",
@@ -27,10 +40,16 @@
     "disclaimer": "Logując się, akceptujesz nasz Regulamin i Politykę Prywatności."
   },
   "map": {
+    "showCityOverview": "pokaż miasto",
+    "followMyLocation": "śledź moją lokalizację",
+    "orbitCurrentZone": "orbituj aktualną strefę",
+    "backToFollowFromZone": "wróć do śledzenia",
     "backToCity": "Wróć do widoku miasta",
     "presenceCount_one": "{{count}} osoba",
     "presenceCount_few": "{{count}} osoby",
-    "presenceCount_many": "{{count}} osób"
+    "presenceCount_many": "{{count}} osób",
+    "horizonDistanceMeters": "{{meters}} m",
+    "horizonDistanceKilometers": "{{km}} km"
   },
   "onboarding": {
     "nameTitle": "jak masz na imię?",
