@@ -1,19 +1,18 @@
-import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 
-/**
- * Meets tab placeholder while the redesigned meets experience is being rebuilt.
- */
-export default function MeetsTabScreen() {
-  const { t } = useTranslation();
+interface GameLiveActiveViewProps {
+  zoneId: string;
+}
 
+/** Placeholder shown for male users who are inside a zone during active game time. */
+export function GameLiveActiveView({ zoneId }: GameLiveActiveViewProps) {
   return (
     <View className="flex-1 items-center justify-center bg-background px-6">
       <Text className="text-2xl text-foreground" style={{ fontFamily: 'Nunito_700Bold' }}>
-        {t('placeholders.meetsTitle')}
+        Game Live Active
       </Text>
       <Text className="mt-3 text-center text-base text-muted" style={{ fontFamily: 'Nunito_400Regular' }}>
-        {t('placeholders.meetsBody')}
+        You are inside zone {zoneId}.
       </Text>
     </View>
   );

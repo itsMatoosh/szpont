@@ -22,9 +22,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { AnimatedSlide } from '@/components/animated-slide/animated-slide.component';
 import { StepDateOfBirth } from '@/components/onboarding-steps/step-date-of-birth.component';
 import { StepDisplayName } from '@/components/onboarding-steps/step-display-name.component';
+import { StepGender } from '@/components/onboarding-steps/step-gender.component';
 import { StepLoading } from '@/components/onboarding-steps/step-loading.component';
 import { StepPhotos } from '@/components/onboarding-steps/step-photos.component';
-import { StepUsername } from '@/components/onboarding-steps/step-username.component';
 import { useAuth } from '@/hooks/auth/use-auth.hook';
 import { useProfilePhotos } from '@/hooks/photos/use-profile-photos.hook';
 import { useProfileContext } from '@/hooks/profile/profile.context';
@@ -39,7 +39,7 @@ import { supabase } from '@/util/supabase/supabase.util';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const LAST_FORM_SLIDE = 3;
 
-/** Multi-step onboarding wizard collecting display name, username, date of birth, and photos. */
+/** Multi-step onboarding wizard collecting display name, gender, date of birth, and photos. */
 export default function OnboardingScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -54,7 +54,6 @@ export default function OnboardingScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   const displayNameRef = useRef<TextInput>(null);
-  const usernameRef = useRef<TextInput>(null);
   const dayRef = useRef<TextInput>(null);
   const monthRef = useRef<TextInput>(null);
   const yearRef = useRef<TextInput>(null);
@@ -67,12 +66,12 @@ export default function OnboardingScreen() {
     trigger,
     handleSubmit,
     formState: { errors },
-  } = useForm<OnboardingFormInput>({
+  } = useForm<OnboardingFormInput, unknown, OnboardingFormValues>({
     resolver: zodResolver(schema),
     mode: 'onChange',
     defaultValues: {
       displayName: '',
-      username: '',
+      gender: '',
       day: '',
       month: '',
       year: '',
@@ -80,7 +79,7 @@ export default function OnboardingScreen() {
   });
 
   const displayName = watch('displayName');
-  const username = watch('username');
+  const gender = watch('gender');
   const day = watch('day');
   const month = watch('month');
   const year = watch('year');
@@ -91,7 +90,7 @@ export default function OnboardingScreen() {
       case 0:
         return displayName.trim().length > 0 && !errors.displayName;
       case 1:
-        return username.replace(/\s/g, '').length > 0 && !errors.username;
+        return (gender === 'male' || gender === 'female') && !errors.gender;
       case 2:
         return day.length === 2 && month.length === 2 && year.length === 4
           && !errors.day && !errors.month && !errors.year;
@@ -107,7 +106,7 @@ export default function OnboardingScreen() {
     const timer = setTimeout(() => {
       switch (currentPage) {
         case 0: displayNameRef.current?.focus(); break;
-        case 1: usernameRef.current?.focus(); break;
+        case 1: break;
         case 2: dayRef.current?.focus(); break;
         case 3: break;
       }
@@ -146,7 +145,7 @@ export default function OnboardingScreen() {
     const { error } = await supabase.from('users').insert({
       id: user.id,
       display_name: data.displayName,
-      username: data.username,
+      gender: data.gender,
       date_of_birth: dateOfBirth,
     });
 
@@ -176,7 +175,7 @@ export default function OnboardingScreen() {
 
     const fields =
       currentPage === 0 ? 'displayName' as const
-        : currentPage === 1 ? 'username' as const
+        : currentPage === 1 ? 'gender' as const
           : (['day', 'month', 'year'] as const);
     const valid = await trigger(fields);
     if (!valid) return;
@@ -227,12 +226,9 @@ export default function OnboardingScreen() {
           </AnimatedSlide>
 
           <AnimatedSlide index={1} scrollX={scrollX}>
-            <StepUsername
+            <StepGender
               control={control}
-              error={errors.username}
-              inputRef={usernameRef}
-              canContinue={canContinue}
-              onSubmit={handleContinue}
+              error={errors.gender}
             />
           </AnimatedSlide>
 

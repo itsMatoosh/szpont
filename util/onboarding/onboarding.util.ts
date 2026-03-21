@@ -6,6 +6,12 @@ export const MIN_AGE = 15;
 /** Maximum age allowed; used in validation. */
 export const MAX_AGE = 100;
 
+/** Allowed gender values accepted during onboarding. */
+export const ONBOARDING_GENDER_VALUES = ['male', 'female'] as const;
+
+/** Canonical gender value persisted to the `users` table. */
+export type OnboardingGender = (typeof ONBOARDING_GENDER_VALUES)[number];
+
 /** Translation function for localized error messages (e.g. i18n t). */
 export type OnboardingSchemaT = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -37,15 +43,15 @@ export function getOnboardingFormSchema(t: OnboardingSchemaT) {
         .min(3, t('onboarding.errors.displayNameMinLength'))
         .transform((s) => s.trim())
         .refine((s) => /^[a-zA-Z]+$/.test(s), t('onboarding.errors.displayNameLettersOnly')),
-      username: z
+      gender: z
         .string()
-        .min(3, t('onboarding.errors.usernameMinLength'))
-        .max(30, t('onboarding.errors.usernameMaxLength'))
-        .transform((s) => s.toLowerCase().replace(/\s/g, '').trim())
-        .refine((s) => /^[a-z0-9._]+$/.test(s), t('onboarding.errors.usernameInvalidChars'))
-        .refine((s) => !s.startsWith('.'), t('onboarding.errors.usernameNoLeadingPeriod'))
-        .refine((s) => !s.endsWith('.'), t('onboarding.errors.usernameNoTrailingPeriod'))
-        .refine((s) => !s.includes('..'), t('onboarding.errors.usernameNoConsecutiveDots')),
+        .min(1, t('onboarding.errors.genderRequired'))
+        .refine(
+          (value): value is OnboardingGender =>
+            ONBOARDING_GENDER_VALUES.includes(value as OnboardingGender),
+          t('onboarding.errors.genderRequired'),
+        )
+        .transform((value) => value as OnboardingGender),
       day: z.string().length(2, t('onboarding.errors.dobDayLength')),
       month: z.string().length(2, t('onboarding.errors.dobMonthLength')),
       year: z.string().length(4, t('onboarding.errors.dobYearLength')),

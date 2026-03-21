@@ -52,6 +52,7 @@
     "expo-video": "~55.0.11",
     "expo-widgets": "^55.0.7",
     "i18next": "^25.9.0",
+    "luxon": "^3.7.2",
     "nativewind": "^5.0.0-preview.2",
     "react": "19.2.4",
     "react-hook-form": "^7.71.2",
@@ -71,6 +72,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
     "@types/d3-force": "^3.0.10",
+    "@types/luxon": "^3.7.1",
     "@types/react": "~19.2.2",
     "postcss": "^8.5.8",
     "tailwindcss": "^4.2.1",

@@ -102,6 +102,36 @@ export type Database = {
           },
         ]
       }
+      game_schedule: {
+        Row: {
+          enabled: boolean
+          end_day: number
+          end_hour: number
+          id: number
+          start_day: number
+          start_hour: number
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          end_day: number
+          end_hour: number
+          id?: number
+          start_day: number
+          start_hour: number
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          end_day?: number
+          end_hour?: number
+          id?: number
+          start_day?: number
+          start_hour?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       geofences: {
         Row: {
           id: string
@@ -299,24 +329,24 @@ export type Database = {
           created_at: string
           date_of_birth: string
           display_name: string
+          gender: string | null
           id: string
-          username: string
         }
         Insert: {
           bio?: string
           created_at?: string
           date_of_birth: string
           display_name: string
+          gender?: string | null
           id: string
-          username: string
         }
         Update: {
           bio?: string
           created_at?: string
           date_of_birth?: string
           display_name?: string
+          gender?: string | null
           id?: string
-          username?: string
         }
         Relationships: []
       }

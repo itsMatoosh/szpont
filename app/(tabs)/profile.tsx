@@ -65,7 +65,6 @@ export default function ProfileTabScreen() {
         <Text className="text-lg font-bold text-foreground">
           {profile.display_name}, {age}
         </Text>
-        <Text className="text-sm text-muted">@{profile.username}</Text>
       </View>
 
       {profile.bio.length > 0 && (
