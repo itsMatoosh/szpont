@@ -203,7 +203,7 @@ export function MapSurface({
         followUserLocation={followUserLocationActive}
         followZoomLevel={FOLLOW_USER_ZOOM}
         followPitch={followUserLocationActive ? FOLLOW_USER_PITCH : undefined}
-        // Follow mode ignores `padding` on CameraStop; use followPadding for tab bar / bottom chrome offset.
+        // Follow mode ignores `padding` on CameraStop; use followPadding for safe-area offset.
         followPadding={followUserLocationActive ? cameraPadding : undefined}
         followUserMode={
           followUserLocationActive ? UserTrackingMode.Follow : undefined

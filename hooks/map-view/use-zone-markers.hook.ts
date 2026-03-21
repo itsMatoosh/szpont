@@ -11,17 +11,12 @@ interface EdgeInsets {
   left: number;
 }
 
-/** Extra top padding below the safe area reserved for top map overlays (city / follow toggle). */
-const TOP_OVERLAY_HEIGHT = 52;
-
 interface UseZoneMarkersParams {
   cityCamera: CityCamera | undefined;
   zones: MapZone[];
   insets: EdgeInsets;
   screenWidth: number;
   screenHeight: number;
-  /** Bottom obstruction (tab bar reserve) passed into marker viewport padding. */
-  mapBottomChromePx: number;
 }
 
 interface UseZoneMarkersResult {
@@ -36,7 +31,6 @@ export function useZoneMarkers({
   insets,
   screenWidth,
   screenHeight,
-  mapBottomChromePx,
 }: UseZoneMarkersParams): UseZoneMarkersResult {
   return useMemo<UseZoneMarkersResult>(() => {
     if (!cityCamera) return { zoneMarkers: [], debugOverlay: null };
@@ -50,9 +44,9 @@ export function useZoneMarkers({
     });
 
     const result = resolveOverlaps(raw, cityCamera.zoom, cityCamera.center, screenWidth, screenHeight, {
-      top: insets.top + TOP_OVERLAY_HEIGHT,
+      top: insets.top,
       right: insets.right,
-      bottom: insets.bottom + mapBottomChromePx,
+      bottom: insets.bottom,
       left: insets.left,
     });
 
@@ -65,7 +59,6 @@ export function useZoneMarkers({
     insets.top,
     screenHeight,
     screenWidth,
-    mapBottomChromePx,
     zones,
   ]);
 }

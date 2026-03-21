@@ -39,6 +39,9 @@ function isCameraModeAllowedWithGeofence(next: CameraMode, activeZoneId: string 
  *   **horizon** chips open city overview without that headline zone; from **city** (or **zone**) taps switch
  *   to **zone** orbit so the camera zooms to that polygon;
  * - squad header back (`clearSelectedZone`) goes to **city** overview without headline zone when bounds exist.
+ *
+ * The map screen should defer mounting until city/zones (and location when permission is granted) are ready
+ * so the lazy initial mode matches city overview vs follow-user without a follow-up effect.
  */
 export function useMapCameraMode({
   activeZoneId,
@@ -47,12 +50,16 @@ export function useMapCameraMode({
   clearSelectedZoneRequestVersion,
   zones,
 }: UseMapCameraModeParams): UseMapCameraModeResult {
-  const [cameraMode, setCameraMode] = useState<CameraMode>({ mode: 'follow-user' });
+  const [cameraMode, setCameraMode] = useState<CameraMode>(() => {
+    if (activeZoneId != null) return { mode: 'follow-user' };
+    return cityCameraAvailable ? { mode: 'city' } : { mode: 'follow-user' };
+  });
 
   /** Tracks last geofence zone for enter/switch detection (exit does not change camera mode). */
   const previousGeofenceZoneIdRef = useRef<string | null>(null);
   const previousClearRequestVersionRef = useRef(clearSelectedZoneRequestVersion);
-  const previousCityIdRef = useRef<string | undefined>(undefined);
+  /** Seeded with current `cityId` so the first effect run does not treat mount as a city change. */
+  const previousCityIdRef = useRef(cityId);
 
   // On entering/switching into zone Z, correct illegal city or orbit of another zone.
   useEffect(() => {
@@ -76,7 +83,7 @@ export function useMapCameraMode({
     setCameraMode(cityCameraAvailable ? { mode: 'city' } : { mode: 'follow-user' });
   }, [activeZoneId, cityCameraAvailable, clearSelectedZoneRequestVersion]);
 
-  // Never auto-switch to city overview; when the resolved city changes, drop out of city framing.
+  // When the user moves to a different supported city (or leaves one), drop city framing.
   useEffect(() => {
     const prev = previousCityIdRef.current;
     previousCityIdRef.current = cityId;

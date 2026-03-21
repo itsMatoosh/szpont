@@ -11,14 +11,26 @@
     "squadTitle": "your squad"
   },
   "tabs": {
-    "swipe": "Swipe",
-    "map": "Map",
-    "squad": "Your Squad",
+    "discover": "Discover",
+    "meets": "Meets",
     "profile": "Profile"
+  },
+  "placeholders": {
+    "discoverTitle": "discover",
+    "discoverBody": "new discovery features are coming soon.",
+    "meetsTitle": "meets",
+    "meetsBody": "this space is getting rebuilt right now."
   },
   "swipeTab": {
     "title": "swipe",
-    "subtitle": "discover people nearby — coming soon."
+    "subtitle": "discover people nearby — swipe or tap to decide.",
+    "loadingMore": "loading more people…",
+    "empty": "you're all caught up for now.",
+    "startOver": "start again",
+    "stampSkip": "nope",
+    "stampLike": "like",
+    "a11ySkip": "Skip this profile",
+    "a11yLike": "Like this profile"
   },
   "profile": {
     "title": "Profile",

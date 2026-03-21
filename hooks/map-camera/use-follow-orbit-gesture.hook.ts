@@ -11,9 +11,8 @@ interface CameraPadding {
 }
 
 interface UseFollowOrbitGestureParams {
-  /** Bottom obstruction above safe area (e.g. native tab bar reserve) for puck-centered padding. */
-  mapBottomChromePx: number;
-  buildCameraPadding: (bottomObstructionPx: number) => CameraPadding;
+  /** Mapbox camera padding (safe area only) — pivot Y matches the follow viewport center. */
+  cameraPadding: CameraPadding;
 }
 
 interface UseFollowOrbitGestureResult {
@@ -40,8 +39,7 @@ function normalizeHeadingDeg(degrees: number): number {
  * a full-screen pan gesture rotates camera heading around the puck center.
  */
 export function useFollowOrbitGesture({
-  mapBottomChromePx,
-  buildCameraPadding,
+  cameraPadding,
 }: UseFollowOrbitGestureParams): UseFollowOrbitGestureResult {
   /** Manual map bearing while following the puck (driven by orbit-style pan around the puck). */
   const [followUserBearingDeg, setFollowUserBearingDeg] = useState(0);
@@ -63,18 +61,12 @@ export function useFollowOrbitGesture({
 
   useEffect(() => {
     if (!mapStackLayout) return;
-    const pad = buildCameraPadding(mapBottomChromePx);
     const { width: mapWidth, height: mapHeight } = mapStackLayout;
     followPuckCenterX.value = mapWidth / 2;
     followPuckCenterY.value =
-      pad.paddingTop + (mapHeight - pad.paddingTop - pad.paddingBottom) / 2;
-  }, [
-    buildCameraPadding,
-    followPuckCenterX,
-    followPuckCenterY,
-    mapStackLayout,
-    mapBottomChromePx,
-  ]);
+      cameraPadding.paddingTop +
+      (mapHeight - cameraPadding.paddingTop - cameraPadding.paddingBottom) / 2;
+  }, [cameraPadding, followPuckCenterX, followPuckCenterY, mapStackLayout]);
 
   /** Pan updates follow bearing like twisting a dial around the puck. */
   const followUserPanGesture = useMemo(

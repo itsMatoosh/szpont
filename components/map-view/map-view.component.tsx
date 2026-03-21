@@ -1,16 +1,14 @@
+import type { LocationObject } from 'expo-location';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type MapState } from '@rnmapbox/maps';
-import { Platform, StyleSheet, useColorScheme, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useColorScheme, useWindowDimensions, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MapControls } from '@/components/map-view/map-controls.component';
 import { MapDebugOverlay } from '@/components/map-view/map-debug-overlay.component';
-import {
-  FOLLOW_HORIZON_TOP_BELOW_SAFE_PX,
-  MapHorizonStrip,
-} from '@/components/map-view/map-horizon-strip.component';
+import { MapHorizonStrip } from '@/components/map-view/map-horizon-strip.component';
 import { MapSurface } from '@/components/map-view/map-surface.component';
 import {
   type CameraMode,
@@ -27,10 +25,9 @@ import { useZoneCamera } from '@/hooks/map-view/use-zone-camera.hook';
 import { useZoneMarkers } from '@/hooks/map-view/use-zone-markers.hook';
 import { useZonesPresenceCounts } from '@/hooks/presence/use-zones-presence-counts.hook';
 import { useFollowHorizonMarkers } from '@/hooks/map-view/use-follow-horizon-markers.hook';
-import { useCurrentLocation } from '@/hooks/location/current-location.context';
 import { useSelectedZoneContext } from '@/hooks/selected-zone/selected-zone.context';
+import { type City } from '@/util/cities/cities.util';
 import { normalizeDeg0To360 } from '@/util/geo/geo.util';
-import { useZonesByCity } from '@/hooks/zones/use-zones-by-city.hook';
 import Mapbox from '@/util/mapbox/mapbox.util';
 
 /** Set to `true` to render bounding-box and viewport debug overlay on the map. */
@@ -38,17 +35,19 @@ const SHOW_DEBUG_OVERLAY = false;
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-/**
- * Extra bottom inset when the tab bar is not fully reflected in `useSafeAreaInsets` (MapView is not a ScrollView).
- * @see https://docs.expo.dev/router/advanced/native-tabs/#known-limitations
- */
-const MAP_TAB_BAR_RESERVE_PX = Platform.OS === 'ios' ? 49 : 0;
-/** Extra top padding below the safe area when no follow horizon (legacy chip band). */
-const TOP_OVERLAY_HEIGHT = 52;
-/** Gap above tab-bar reserve for floating map chips (px). */
-const MAP_CONTROLS_ABOVE_TAB_GAP_PX = 12;
 /** Duration of the initial flyTo zoom-in animation (ms). */
 const FLYTO_DURATION_MS = 1000;
+
+/** Preloaded inputs for the map: zones and geo are supplied by the map tab after its loading gate. */
+export interface MapViewProps {
+  /** Zone polygons for the current `nearestCity` (may be empty). */
+  zones: MapZone[];
+  /** City containing the user, or null when outside supported cities. */
+  nearestCity: City | null;
+  /** Latest device location; null when permission is denied or unavailable. */
+  location: LocationObject | null;
+}
+
 // ── Component ──────────────────────────────────────────────────────────────────
 
 /** Mapbox style URLs keyed by system color scheme; light map for light mode, dark for dark. */
@@ -67,28 +66,28 @@ const BUILDING_EXTRUSION_COLOR = {
  * Full-screen Mapbox map: follow-user (pitched) with orbit bearing gesture, city overview with markers,
  * and zone orbit. Geofence (`activeZoneId`) gates transitions only — no maxBounds, no free map pan.
  */
-export function MapView() {
+export function MapView({ zones, nearestCity, location }: MapViewProps) {
   const colorScheme = useColorScheme();
-  const { activeZoneId, nearestCity, clearSelectedZoneRequestVersion, setSelectedZone } =
-    useSelectedZoneContext();
-  const { zones: rawZones } = useZonesByCity(nearestCity?.id);
-  const zones = rawZones as unknown as MapZone[];
+  const { activeZoneId, clearSelectedZoneRequestVersion, setSelectedZone } = useSelectedZoneContext();
   const zoneIds = useMemo(() => zones.map((z) => z.id), [zones]);
   const presenceCounts = useZonesPresenceCounts(zoneIds);
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const { location } = useCurrentLocation();
 
-  /** Bottom padding above safe area so framing clears the native tab bar. */
-  const mapBottomChromePx = useMemo(
-    () => insets.bottom + MAP_TAB_BAR_RESERVE_PX,
-    [insets.bottom],
+  /** Mapbox camera padding: safe area only (no tab bar / overlay reserves). */
+  const cameraPadding = useMemo(
+    () => ({
+      paddingTop: insets.top,
+      paddingLeft: insets.left,
+      paddingRight: insets.right,
+      paddingBottom: insets.bottom,
+    }),
+    [insets.top, insets.left, insets.right, insets.bottom],
   );
 
   const cameraRef = useRef<Mapbox.Camera>(null);
   const previousCameraModeRef = useRef<CameraMode['mode'] | undefined>(undefined);
   const mapRef = useRef<InstanceType<typeof Mapbox.MapView> | null>(null);
-  const mapBottomChromePxRef = useRef(mapBottomChromePx);
   /** Last known map center/zoom; restored after style change remount so camera does not jump to default. */
   const savedCameraRef = useRef<{ center: [number, number]; zoom: number } | null>(null);
 
@@ -122,41 +121,21 @@ export function MapView() {
     setMapCameraHeadingDeg(normalizeDeg0To360(state.properties.heading));
   }, []);
 
-  const topChromeBelowSafePx = showFollowHorizon
-    ? FOLLOW_HORIZON_TOP_BELOW_SAFE_PX
-    : TOP_OVERLAY_HEIGHT;
-
-  /** Builds camera padding for any bottom obstruction value so all camera paths share one shape. */
-  const buildCameraPadding = useCallback(
-    (bottomObstructionPx: number) => ({
-      paddingTop: insets.top + topChromeBelowSafePx,
-      paddingLeft: 0,
-      paddingRight: 0,
-      paddingBottom: insets.bottom + bottomObstructionPx,
-    }),
-    [insets.bottom, insets.top, topChromeBelowSafePx],
-  );
-
   const { followUserBearingDeg, followUserPanGesture, onMapStackLayout, resetFollowUserBearing } =
     useFollowOrbitGesture({
-      mapBottomChromePx,
-      buildCameraPadding,
+      cameraPadding,
     });
 
-  /** Applies imperative camera commands with shared bottom chrome padding. */
+  /** Applies imperative camera commands with safe-area padding. */
   const applyImperativeCamera = useCallback(
     (command: ImperativeCameraCommand) => {
       cameraRef.current?.setCamera({
         ...command,
-        padding: buildCameraPadding(mapBottomChromePxRef.current),
+        padding: cameraPadding,
       });
     },
-    [buildCameraPadding],
+    [cameraPadding],
   );
-
-  useEffect(() => {
-    mapBottomChromePxRef.current = mapBottomChromePx;
-  }, [mapBottomChromePx]);
 
   const userLat = location?.coords.latitude;
   const userLng = location?.coords.longitude;
@@ -242,7 +221,6 @@ export function MapView() {
     insets,
     screenWidth,
     screenHeight,
-    mapBottomChromePx,
   });
 
   const { allZonesOutlineFeatureCollection } = useZoneBoundaries(zones);
@@ -265,7 +243,6 @@ export function MapView() {
   }));
 
   const shouldUseDeclarativeCamera = cameraMode.mode === 'follow-user' || cameraMode.mode === 'city';
-  const cameraPadding = buildCameraPadding(mapBottomChromePx);
 
   /** Follow-user orbit gesture only; no native rotate / free pan anywhere. */
   const canRotateCamera = cameraMode.mode === 'follow-user';
@@ -312,11 +289,11 @@ export function MapView() {
       cameraRef.current?.setCamera({
         centerCoordinate: saved.center,
         zoomLevel: saved.zoom,
-        padding: buildCameraPadding(mapBottomChromePx),
+        padding: cameraPadding,
         animationDuration: 0,
       });
     }
-  }, [buildCameraPadding, mapBottomChromePx]);
+  }, [cameraPadding]);
 
   return (
     <View style={styles.container}>
@@ -376,7 +353,7 @@ export function MapView() {
           bottom: insets.bottom,
           right: insets.right,
         }}
-        controlsBottomPx={insets.bottom + mapBottomChromePx + MAP_CONTROLS_ABOVE_TAB_GAP_PX}
+        controlsBottomPx={insets.bottom}
       />
 
       {SHOW_DEBUG_OVERLAY && debugOverlay && <MapDebugOverlay debugOverlay={debugOverlay} />}

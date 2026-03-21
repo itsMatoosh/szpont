@@ -11,14 +11,26 @@
     "squadTitle": "twoja ekipa"
   },
   "tabs": {
-    "swipe": "Poznawaj",
-    "map": "Mapa",
-    "squad": "Twoja Ekipa",
+    "discover": "Poznawaj",
+    "meets": "Spotkania",
     "profile": "Profil"
+  },
+  "placeholders": {
+    "discoverTitle": "poznawaj",
+    "discoverBody": "nowa wersja tej sekcji już wkrótce.",
+    "meetsTitle": "spotkania",
+    "meetsBody": "ta sekcja jest teraz przebudowywana."
   },
   "swipeTab": {
     "title": "poznawaj",
-    "subtitle": "odkrywaj ludzi w pobliżu — wkrótce."
+    "subtitle": "odkrywaj ludzi w pobliżu — przesuń lub stuknij.",
+    "loadingMore": "ładowanie kolejnych osób…",
+    "empty": "na razie nie ma nikogo nowego.",
+    "startOver": "zacznij od nowa",
+    "stampSkip": "nope",
+    "stampLike": "like",
+    "a11ySkip": "Pomiń ten profil",
+    "a11yLike": "Polub ten profil"
   },
   "profile": {
     "title": "Profil",

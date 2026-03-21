@@ -20,6 +20,8 @@ interface SelectedZoneContextValue {
   activeZoneId: string | null;
   /** Resolved city from current GPS; shared query for map, geofencing, and labels. */
   nearestCity: City | null;
+  /** True while the nearest-city query is still fetching for the current coordinates. */
+  nearestCityLoading: boolean;
   selectedZoneId: string | null;
   selectedZoneName: string | null;
   selectedZoneSource: SelectedZoneSource | null;
@@ -34,6 +36,7 @@ interface SelectedZoneContextValue {
 const SelectedZoneContext = createContext<SelectedZoneContextValue>({
   activeZoneId: null,
   nearestCity: null,
+  nearestCityLoading: false,
   selectedZoneId: null,
   selectedZoneName: null,
   selectedZoneSource: null,
@@ -54,7 +57,7 @@ interface SelectedZoneProviderProps {
  */
 export function SelectedZoneProvider({ children }: SelectedZoneProviderProps) {
   const activeZoneId = useActiveZoneId();
-  const { city: nearestCity } = useNearestCity();
+  const { city: nearestCity, isLoading: nearestCityLoading } = useNearestCity();
   const [selectedZone, setSelectedZone] = useState<SelectedZoneValue | null>(null);
   const [clearSelectedZoneRequestVersion, setClearSelectedZoneRequestVersion] = useState(0);
 
@@ -71,6 +74,7 @@ export function SelectedZoneProvider({ children }: SelectedZoneProviderProps) {
     () => ({
       activeZoneId,
       nearestCity,
+      nearestCityLoading,
       selectedZoneId: selectedZone?.id ?? null,
       selectedZoneName: selectedZone?.name ?? null,
       selectedZoneSource: selectedZone?.source ?? null,
@@ -82,6 +86,7 @@ export function SelectedZoneProvider({ children }: SelectedZoneProviderProps) {
     [
       activeZoneId,
       nearestCity,
+      nearestCityLoading,
       clearSelectedZone,
       clearSelectedZoneRequestVersion,
       currentCityName,

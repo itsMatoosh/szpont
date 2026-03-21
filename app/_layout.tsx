@@ -151,6 +151,7 @@ function RootNavigator({ session, userId }: { session: unknown; userId: string |
 
       <Stack.Protected guard={!!session && !!profile && locationReady}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="map" />
         <Stack.Screen name="zone/[id]" />
         <Stack.Screen name="edit-profile" />
       </Stack.Protected>
