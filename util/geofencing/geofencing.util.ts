@@ -35,7 +35,6 @@ export const GEOFENCE_TASK = 'szpont-geofence-task';
 // ── localStorage keys for persisted state ──────────────────────────────────────
 
 const ACTIVE_GEOFENCES_KEY = 'geofencing:activeGeofences';
-const ZONE_NAMES_KEY = 'geofencing:zoneNames';
 
 // ── Helpers for persisted state ────────────────────────────────────────────────
 
@@ -58,28 +57,9 @@ function setActiveGeofences(map: Record<string, string>): void {
   localStorage.setItem(ACTIVE_GEOFENCES_KEY, JSON.stringify(map));
 }
 
-/**
- * Zone names are cached so background tasks can include the human-readable
- * name in the Live Activity without a network call.
- */
-function getCachedZoneNames(): Record<string, string> {
-  try {
-    const raw = localStorage.getItem(ZONE_NAMES_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-/** Persists a zoneId → name map so background tasks can display zone names. */
-export function setCachedZoneNames(names: Record<string, string>): void {
-  localStorage.setItem(ZONE_NAMES_KEY, JSON.stringify(names));
-}
-
 /** Removes all persisted geofencing state (used on city change / cleanup). */
 export function clearGeofencingState(): void {
   localStorage.removeItem(ACTIVE_GEOFENCES_KEY);
-  localStorage.removeItem(ZONE_NAMES_KEY);
   refreshActiveZone();
 }
 
@@ -147,7 +127,6 @@ TaskManager.defineTask(GEOFENCE_TASK, async ({ data, error }) => {
   const [zoneId, geofenceId] = parts;
 
   const active = getActiveGeofences();
-  const names = getCachedZoneNames();
 
   if (eventType === Location.GeofencingEventType.Enter) {
     const wasInZone = hasActiveGeofenceForZone(active, zoneId);

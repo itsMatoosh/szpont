@@ -288,6 +288,130 @@ export type Database = {
         }
         Relationships: []
       }
+      user_cities: {
+        Row: {
+          city_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_cities_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_cities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_elo_ratings: {
+        Row: {
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          rating?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_elo_ratings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_filters: {
+        Row: {
+          gender: Database["public"]["Enums"]["user_gender"] | null
+          max_age: number
+          min_age: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          gender?: Database["public"]["Enums"]["user_gender"] | null
+          max_age?: number
+          min_age?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          gender?: Database["public"]["Enums"]["user_gender"] | null
+          max_age?: number
+          min_age?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_filters_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_likes: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          target_user_id: string
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          target_user_id: string
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          target_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_likes_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_likes_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profile_media: {
         Row: {
           id: string
@@ -323,13 +447,46 @@ export type Database = {
           },
         ]
       }
+      user_skips: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          target_user_id: string
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          target_user_id: string
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          target_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_skips_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_skips_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           bio: string
           created_at: string
           date_of_birth: string
           display_name: string
-          gender: string | null
+          gender: Database["public"]["Enums"]["user_gender"] | null
           id: string
         }
         Insert: {
@@ -337,7 +494,7 @@ export type Database = {
           created_at?: string
           date_of_birth: string
           display_name: string
-          gender?: string | null
+          gender?: Database["public"]["Enums"]["user_gender"] | null
           id: string
         }
         Update: {
@@ -345,7 +502,7 @@ export type Database = {
           created_at?: string
           date_of_birth?: string
           display_name?: string
-          gender?: string | null
+          gender?: Database["public"]["Enums"]["user_gender"] | null
           id?: string
         }
         Relationships: []
@@ -515,6 +672,20 @@ export type Database = {
       }
       _st_within: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean }
       addauth: { Args: { "": string }; Returns: boolean }
+      send_rank_game_vote: {
+        Args: { p_loser_id: string; p_winner_id: string }
+        Returns: {
+          rating: number
+          user_id: string
+        }[]
+      }
+      apply_inactive_drop_vote: {
+        Args: { p_loser_ids: string[]; p_winner_id: string }
+        Returns: {
+          rating: number
+          user_id: string
+        }[]
+      }
       addgeometrycolumn:
         | {
             Args: {
@@ -553,6 +724,23 @@ export type Database = {
             Returns: string
           }
       disablelongtransactions: { Args: never; Returns: string }
+      get_game_lobby_drop: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          age: number
+          bio: string
+          display_name: string
+          rating: number
+          user_id: string
+        }[]
+      }
+      get_user_elo_ratings: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          rating: number
+          user_id: string
+        }[]
+      }
       dropgeometrycolumn:
         | {
             Args: {
@@ -742,6 +930,14 @@ export type Database = {
       postgis_constraint_type: {
         Args: { geomcolumn: string; geomschema: string; geomtable: string }
         Returns: string
+      }
+      record_game_lobby_like: {
+        Args: { p_target_user_id: string }
+        Returns: undefined
+      }
+      record_game_lobby_skip: {
+        Args: { p_target_user_id: string }
+        Returns: undefined
       }
       postgis_extensions_upgrade: { Args: never; Returns: string }
       postgis_full_version: { Args: never; Returns: string }
@@ -1386,6 +1582,7 @@ export type Database = {
     }
     Enums: {
       media_type: "photo"
+      user_gender: "male" | "female"
     }
     CompositeTypes: {
       geometry_dump: {
@@ -1522,6 +1719,7 @@ export const Constants = {
   public: {
     Enums: {
       media_type: ["photo"],
+      user_gender: ["male", "female"],
     },
   },
 } as const

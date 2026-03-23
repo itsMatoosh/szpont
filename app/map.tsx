@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MapView, type MapViewProps } from '@/components/map-view/map-view.component';
 import { type MapZone } from '@/components/map-view/map-view.types';
-import { useCurrentLocation } from '@/hooks/location/current-location.context';
+import { useLocation } from '@/hooks/location/location.context';
 import { useLocationPermissionContext } from '@/hooks/location/location-permission.context';
 import { useSelectedZoneContext } from '@/hooks/selected-zone/selected-zone.context';
 import { useZonesByCity } from '@/hooks/zones/use-zones-by-city.hook';
@@ -18,7 +18,7 @@ import { useZonesByCity } from '@/hooks/zones/use-zones-by-city.hook';
 export default function MapScreen() {
   const insets = useSafeAreaInsets();
   const { foregroundStatus } = useLocationPermissionContext();
-  const { location } = useCurrentLocation();
+  const { location } = useLocation();
   const { nearestCity, nearestCityLoading } = useSelectedZoneContext();
   const { zones: rawZones, isLoading: zonesLoading } = useZonesByCity(nearestCity?.id);
 

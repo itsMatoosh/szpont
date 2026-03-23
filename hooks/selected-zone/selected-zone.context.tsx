@@ -20,8 +20,10 @@ interface SelectedZoneContextValue {
   activeZoneId: string | null;
   /** Resolved city from current GPS; shared query for map, geofencing, and labels. */
   nearestCity: City | null;
-  /** True while the nearest-city query is still fetching for the current coordinates. */
+  /** True only during the first nearest-city resolution for current coordinates. */
   nearestCityLoading: boolean;
+  /** True while nearest-city is refreshing in the background for new coordinates. */
+  nearestCityFetching: boolean;
   selectedZoneId: string | null;
   selectedZoneName: string | null;
   selectedZoneSource: SelectedZoneSource | null;
@@ -37,6 +39,7 @@ const SelectedZoneContext = createContext<SelectedZoneContextValue>({
   activeZoneId: null,
   nearestCity: null,
   nearestCityLoading: false,
+  nearestCityFetching: false,
   selectedZoneId: null,
   selectedZoneName: null,
   selectedZoneSource: null,
@@ -57,7 +60,11 @@ interface SelectedZoneProviderProps {
  */
 export function SelectedZoneProvider({ children }: SelectedZoneProviderProps) {
   const activeZoneId = useActiveZoneId();
-  const { city: nearestCity, isLoading: nearestCityLoading } = useNearestCity();
+  const {
+    city: nearestCity,
+    isLoading: nearestCityLoading,
+    isFetching: nearestCityFetching,
+  } = useNearestCity();
   const [selectedZone, setSelectedZone] = useState<SelectedZoneValue | null>(null);
   const [clearSelectedZoneRequestVersion, setClearSelectedZoneRequestVersion] = useState(0);
 
@@ -75,6 +82,7 @@ export function SelectedZoneProvider({ children }: SelectedZoneProviderProps) {
       activeZoneId,
       nearestCity,
       nearestCityLoading,
+      nearestCityFetching,
       selectedZoneId: selectedZone?.id ?? null,
       selectedZoneName: selectedZone?.name ?? null,
       selectedZoneSource: selectedZone?.source ?? null,
@@ -87,6 +95,7 @@ export function SelectedZoneProvider({ children }: SelectedZoneProviderProps) {
       activeZoneId,
       nearestCity,
       nearestCityLoading,
+      nearestCityFetching,
       clearSelectedZone,
       clearSelectedZoneRequestVersion,
       currentCityName,

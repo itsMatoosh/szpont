@@ -32,6 +32,23 @@
     "a11ySkip": "Skip this profile",
     "a11yLike": "Like this profile"
   },
+  "rankGame": {
+    "preparingDrop": "preparing drop...",
+    "loadErrorTitle": "could not load inactive game",
+    "retry": "retry",
+    "emptyTitle": "no more drops",
+    "emptyDescription": "you have ranked all currently available profiles.",
+    "refreshProfiles": "refresh profiles"
+  },
+  "gameInactiveView": {
+    "summaryTitle": "who do you want to meet?",
+    "summarySubtitle": "build your squad for this weekend's game.",
+    "summaryHint": "tap to like. long press to see profile.",
+    "nextGameStarts": "next game starts",
+    "scheduleUnavailable": "schedule unavailable",
+    "usersSignedUp_one": "{{count}} user signed up.",
+    "usersSignedUp_other": "{{count}} users signed up."
+  },
   "profile": {
     "title": "Profile",
     "editProfile": "Edit Profile",

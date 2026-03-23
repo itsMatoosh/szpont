@@ -1,0 +1,211 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>SZPONT - The Game is Chilling</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-background": "#3b3a06",
+                        "on-tertiary-fixed-variant": "#685900",
+                        "tertiary-fixed-dim": "#edd13a",
+                        "on-primary": "#ffffff",
+                        "outline": "#858349",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-container": "#5d5000",
+                        "primary-container": "#cafd00",
+                        "secondary-fixed": "#e2e2e2",
+                        "secondary-container": "#e2e2e2",
+                        "surface-tint": "#556d00",
+                        "on-primary-container": "#4a5e00",
+                        "primary-fixed": "#cafd00",
+                        "on-primary-fixed-variant": "#526900",
+                        "primary-fixed-dim": "#beee00",
+                        "secondary-fixed-dim": "#d4d4d4",
+                        "error-dim": "#b92902",
+                        "on-surface-variant": "#686730",
+                        "error-container": "#f95630",
+                        "surface-container-low": "#fffcca",
+                        "on-error": "#ffffff",
+                        "secondary": "#646464",
+                        "error": "#be2d06",
+                        "surface-variant": "#efec93",
+                        "primary": "#556d00",
+                        "primary-dim": "#4b6000",
+                        "on-error-container": "#520c00",
+                        "outline-variant": "#bfbc7c",
+                        "tertiary-fixed": "#fce047",
+                        "on-primary-fixed": "#3a4a00",
+                        "surface-container-highest": "#efec93",
+                        "on-secondary-fixed-variant": "#5b5b5b",
+                        "tertiary": "#746400",
+                        "inverse-primary": "#cafd00",
+                        "background": "#fffbff",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#3f3f3f",
+                        "surface-dim": "#eae789",
+                        "surface-container": "#fbf7a7",
+                        "surface-container-high": "#f5f29d",
+                        "on-tertiary-fixed": "#483d00",
+                        "inverse-surface": "#0f0f00",
+                        "on-secondary-container": "#525252",
+                        "tertiary-dim": "#665800",
+                        "secondary-dim": "#585858",
+                        "inverse-on-surface": "#a2a063",
+                        "tertiary-container": "#fce047",
+                        "surface": "#fffbff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-bright": "#fffbff",
+                        "on-surface": "#3b3a06"
+                    },
+                    fontFamily: {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen flex flex-col overflow-x-hidden">
+<!-- Main Content Area -->
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root @container">
+<!-- Header / Status Area -->
+<div class="relative flex flex-col items-center justify-center pt-12 pb-8 px-6 overflow-hidden">
+<div class="absolute inset-0 z-0 bg-cover bg-center opacity-10 mix-blend-multiply" data-alt="Abstract Map Background" data-location="Warsaw" style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuA3_5BGojlGU56E2PDnwehnoJxUE6i__Zi-CqgKn-Xsd7TMPzeM63jJ3-7693SqqzJctgcmbFKeA7FlUdds4Fupc_GdGNEVXOwRrdk28ndrH8l2DiGqBhbrPXEHG15KKUO3M5qPHsu0p1EpIj_FKrZxg453xsdfv633rFsBW_3kA3ko6tcjfP51moOcNXeRplaZxOmrlwGSM1BI0O6klhWkIIkLxhDYoZd1nuRv5NcUD83MMY3BtC6aTx792EmcsXtkXcBLcC6Ijw8&quot;);"></div>
+<h1 class="font-headline font-bold tracking-tight text-on-background z-10 mb-2" style=""><img alt="SZPONT Logo" class="w-auto object-contain h-10" src="https://lh3.googleusercontent.com/aida/ADBb0uh3TXkcdUNCokD9fj0QoHRzv9tbzdBGAL-RmrhmusVu2lu8LpHv5RfQ9DcPqAZcnrWC1WSEz6umMqRyH5S0QAoSVXPC0ptn64Zsc2DWq9U0dErytQ25n6tMAq5WoxGUQMTHrhXahOBRwna5DgXktSqBEjQBxMQMk02lX-k0-dbb3Lg5nkECpqc38v-34A6ULtt2hRZEi74cvPqFoD48009B1bmOieJZi9autf-Bzt9Uf2tDWL67dp6pM4qDMhEeLdmno_IZjzy5dg" style=""></h1>
+<h2 class="font-headline text-4xl font-extrabold text-center uppercase leading-tight z-10" style="">Next game starting in</h2>
+<!-- Countdown -->
+<div class="flex gap-4 mt-8 z-10 w-full max-w-md">
+<div class="flex grow basis-0 flex-col items-stretch gap-2">
+<div class="flex h-16 grow items-center justify-center rounded-lg px-3 bg-surface-container-low">
+<p class="font-headline text-2xl font-bold" style="">02</p>
+</div>
+<div class="flex items-center justify-center"><p class="font-label text-xs font-semibold uppercase tracking-wider text-on-surface-variant" style="">Days</p></div>
+</div>
+<div class="flex grow basis-0 flex-col items-stretch gap-2">
+<div class="flex h-16 grow items-center justify-center rounded-lg px-3 bg-surface-container-low">
+<p class="font-headline text-2xl font-bold" style="">14</p>
+</div>
+<div class="flex items-center justify-center"><p class="font-label text-xs font-semibold uppercase tracking-wider text-on-surface-variant" style="">Hours</p></div>
+</div>
+<div class="flex grow basis-0 flex-col items-stretch gap-2">
+<div class="flex h-16 grow items-center justify-center rounded-lg px-3 bg-surface-container-low">
+<p class="font-headline text-2xl font-bold" style="">00</p>
+</div>
+<div class="flex items-center justify-center"><p class="font-label text-xs font-semibold uppercase tracking-wider text-on-surface-variant" style="">Mins</p></div>
+</div>
+</div>
+</div>
+<!-- Voting Section -->
+<div class="flex-1 px-6 pb-24 z-10 relative">
+<div class="max-w-md mx-auto">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline text-xl font-bold tracking-tight uppercase" style="">This Weekend's Zones</h3>
+<span class="font-label text-xs font-semibold uppercase tracking-wider text-on-surface-variant bg-surface-container-low px-2 py-1 rounded-sm" style="">Vote Now</span>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Zone 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.06)] relative overflow-hidden group">
+<div class="absolute inset-y-0 left-0 bg-surface-container-low w-[45%] opacity-50 z-0 transition-all duration-500 ease-out group-hover:w-[48%]"></div>
+<div class="relative z-10 flex items-center justify-between">
+<div class="flex flex-col gap-1">
+<h4 class="font-headline text-lg font-bold uppercase tracking-tight" style="">Mokotów</h4>
+<div class="flex items-center gap-2">
+<span class="font-label text-sm font-semibold text-primary" style="">45%</span>
+<span class="text-on-surface-variant text-xs font-medium" style="">Leading</span>
+</div>
+</div>
+<button class="bg-primary-container text-on-primary-container font-headline font-bold text-sm uppercase px-6 py-3 rounded-full hover:bg-primary-fixed-dim transition-colors" style="">
+                                Vote
+                            </button>
+</div>
+</div>
+<!-- Zone 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.06)] relative overflow-hidden group">
+<div class="absolute inset-y-0 left-0 bg-surface-container-low w-[30%] opacity-50 z-0 transition-all duration-500 ease-out group-hover:w-[32%]"></div>
+<div class="relative z-10 flex items-center justify-between">
+<div class="flex flex-col gap-1">
+<h4 class="font-headline text-lg font-bold uppercase tracking-tight" style="">Centrum</h4>
+<div class="flex items-center gap-2">
+<span class="font-label text-sm font-semibold" style="">30%</span>
+</div>
+</div>
+<button class="bg-surface border border-outline-variant/30 text-on-surface font-headline font-bold text-sm uppercase px-6 py-3 rounded-full hover:bg-surface-container-low transition-colors" style="">
+                                Vote
+                            </button>
+</div>
+</div>
+<!-- Zone 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.06)] relative overflow-hidden group">
+<div class="absolute inset-y-0 left-0 bg-surface-container-low w-[15%] opacity-50 z-0 transition-all duration-500 ease-out group-hover:w-[17%]"></div>
+<div class="relative z-10 flex items-center justify-between">
+<div class="flex flex-col gap-1">
+<h4 class="font-headline text-lg font-bold uppercase tracking-tight" style="">Wola</h4>
+<div class="flex items-center gap-2">
+<span class="font-label text-sm font-semibold" style="">15%</span>
+</div>
+</div>
+<button class="bg-surface border border-outline-variant/30 text-on-surface font-headline font-bold text-sm uppercase px-6 py-3 rounded-full hover:bg-surface-container-low transition-colors" style="">
+                                Vote
+                            </button>
+</div>
+</div>
+<!-- Zone 4 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0_4px_24px_rgba(0,0,0,0.06)] relative overflow-hidden group">
+<div class="absolute inset-y-0 left-0 bg-surface-container-low w-[10%] opacity-50 z-0 transition-all duration-500 ease-out group-hover:w-[12%]"></div>
+<div class="relative z-10 flex items-center justify-between">
+<div class="flex flex-col gap-1">
+<h4 class="font-headline text-lg font-bold uppercase tracking-tight" style="">Praga</h4>
+<div class="flex items-center gap-2">
+<span class="font-label text-sm font-semibold" style="">10%</span>
+</div>
+</div>
+<button class="bg-surface border border-outline-variant/30 text-on-surface font-headline font-bold text-sm uppercase px-6 py-3 rounded-full hover:bg-surface-container-low transition-colors" style="">
+                                Vote
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Shared BottomNavBar -->
+<div class="fixed bottom-0 w-full z-50">
+<div class="flex gap-2 border-t border-outline-variant/20 bg-surface/90 backdrop-blur-md px-4 pb-safe pt-2">
+<a class="just flex flex-1 flex-col items-center justify-end gap-1 rounded-full text-on-surface hover:text-primary transition-colors" href="#" style="">
+<div class="flex h-8 items-center justify-center" data-icon="map_trifold" data-size="24px" data-weight="fill">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">map</span>
+</div>
+</a>
+<a class="just flex flex-1 flex-col items-center justify-end gap-1 text-on-surface-variant hover:text-primary transition-colors" href="#" style="">
+<div class="flex h-8 items-center justify-center" data-icon="trophy" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined" style="">emoji_events</span>
+</div>
+</a>
+<a class="just flex flex-1 flex-col items-center justify-end gap-1 text-on-surface-variant hover:text-primary transition-colors" href="#" style="">
+<div class="flex h-8 items-center justify-center" data-icon="user" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined" style="">person</span>
+</div>
+</a>
+</div>
+</div>
+</div>
+</body></html>

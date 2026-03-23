@@ -22,11 +22,14 @@ export function useForegroundLocationPermission() {
   const { foregroundStatus: status, recheck } = useLocationPermissionContext();
   const { t } = useTranslation();
 
+  /** Requests foreground permission. */
   const request = useCallback(async () => {
+    // Request foreground permission.
     await Location.requestForegroundPermissionsAsync();
     await recheck();
   }, [recheck]);
 
+  /** Shows an alert to open settings. */
   const openSettings = useCallback(() => {
     // show alert to open settings
     Alert.alert(t('foregroundLocationPermission.openSettings.title'), t('foregroundLocationPermission.openSettings.description'), [
@@ -40,7 +43,7 @@ export function useForegroundLocationPermission() {
         style: 'cancel',
       },
     ]);
-  }, []);
+  }, [t]);
 
   return { status, request, openSettings };
 }

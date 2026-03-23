@@ -32,6 +32,25 @@
     "a11ySkip": "Pomiń ten profil",
     "a11yLike": "Polub ten profil"
   },
+  "rankGame": {
+    "preparingDrop": "przygotowywanie dropu...",
+    "loadErrorTitle": "nie udało się załadować gry nieaktywnej",
+    "retry": "spróbuj ponownie",
+    "emptyTitle": "brak kolejnych dropów",
+    "emptyDescription": "oceniono już wszystkie aktualnie dostępne profile.",
+    "refreshProfiles": "odśwież profile"
+  },
+  "gameInactiveView": {
+    "summaryTitle": "z kim chcesz się poznać?",
+    "summarySubtitle": "zbuduj perfekcyjną ekipę na ten weekend.",
+    "summaryHint": "stuknij, żeby polubić. przytrzymaj, żeby zobaczyć profil.",
+    "nextGameStarts": "start następnej gry",
+    "scheduleUnavailable": "harmonogram niedostępny",
+    "usersSignedUp_one": "{{count}} użytkownik zapisany.",
+    "usersSignedUp_few": "{{count}} użytkowników zapisanych.",
+    "usersSignedUp_many": "{{count}} użytkowników zapisanych.",
+    "usersSignedUp_other": "{{count}} użytkowników zapisanych."
+  },
   "profile": {
     "title": "Profil",
     "editProfile": "Edytuj profil",

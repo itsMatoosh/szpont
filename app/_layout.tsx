@@ -18,8 +18,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { useAuth } from '@/hooks/auth/use-auth.hook';
 import { useDeviceRegistration } from '@/hooks/device/use-device-registration.hook';
+import { GameActiveProvider, useGameActiveContext } from '@/hooks/game-active/game-active.context';
 import { useGeofencingSetup } from '@/hooks/geofencing/use-geofencing-setup.hook';
-import { CurrentLocationProvider } from '@/hooks/location/current-location.context';
+import { LocationProvider } from '@/hooks/location/location.context';
 import {
   LocationPermissionProvider,
   type LocationPermissionSnapshot,
@@ -33,7 +34,7 @@ import {
 } from '@/hooks/notifications/notification-permission.context';
 import { useNotificationsSetup } from '@/hooks/notifications/use-notifications-setup.hook';
 import { ProfileProvider, useProfileContext } from '@/hooks/profile/profile.context';
-import { SelectedZoneProvider } from '@/hooks/selected-zone/selected-zone.context';
+import { SelectedZoneProvider, useSelectedZoneContext } from '@/hooks/selected-zone/selected-zone.context';
 import { WelcomeProvider, useWelcome } from '@/hooks/welcome/welcome.context';
 
 import { Loader } from '@/components/loader/loader.component';
@@ -82,7 +83,9 @@ export default function RootLayout() {
   // Video gate applies when the user is unauthenticated (login is the only pre-auth screen).
   const needsVideoGate = !session && !introVideoPreloaded;
 
-  if (isLoading || !fontsLoaded || !locationSnapshot || !notificationSnapshot || needsVideoGate) return <Loader />;
+  if (isLoading || !fontsLoaded || !locationSnapshot || !notificationSnapshot || needsVideoGate) {
+    return <Loader />;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -91,13 +94,15 @@ export default function RootLayout() {
           <ProfileProvider user={user}>
             <LocationPermissionProvider initialSnapshot={locationSnapshot}>
               <NotificationPermissionProvider initialSnapshot={notificationSnapshot}>
-                <CurrentLocationProvider>
+                <LocationProvider>
                   <WelcomeProvider>
                     <SelectedZoneProvider>
-                      <RootNavigator session={session} userId={user?.id ?? null} />
+                      <GameActiveProvider>
+                        <RootNavigator session={session} userId={user?.id ?? null} />
+                      </GameActiveProvider>
                     </SelectedZoneProvider>
                   </WelcomeProvider>
-                </CurrentLocationProvider>
+                </LocationProvider>
               </NotificationPermissionProvider>
             </LocationPermissionProvider>
           </ProfileProvider>
@@ -117,11 +122,20 @@ function RootNavigator({ session, userId }: { session: unknown; userId: string |
   const { hasSeenWelcome } = useWelcome();
   const locationReady = useLocationPermissionsComplete();
 
+  const { nearestCityLoading: nearestCityInitialLoading } = useSelectedZoneContext();
+  const { isGameActiveLoading } = useGameActiveContext();
+
   // Always called (React rules of hooks); no-ops when inputs are null
   const { deviceId, backgroundSecret, isReady: deviceReady } = useDeviceRegistration(userId);
   const notificationsReady = useNotificationsSetup(deviceId);
   const geofencingReady = useGeofencingSetup(backgroundSecret);
-  const allReady = !profileLoading && deviceReady && notificationsReady && geofencingReady;
+  const allReady =
+    !profileLoading &&
+    deviceReady &&
+    notificationsReady &&
+    geofencingReady &&
+    !isGameActiveLoading &&
+    !nearestCityInitialLoading;
 
   // Keep the native splash visible until everything is set up
   useEffect(() => {

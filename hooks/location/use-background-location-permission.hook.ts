@@ -30,21 +30,24 @@ export function useBackgroundLocationPermission() {
 
   /** Requests foreground permission, then immediately requests background. */
   const request = useCallback(async () => {
+    // Request foreground permission.
     const fg = await Location.requestForegroundPermissionsAsync();
     if (fg.status !== Location.PermissionStatus.GRANTED) {
       await recheck();
       return;
     }
 
+    // Request background permission.
     await Location.requestBackgroundPermissionsAsync();
     await recheck();
   }, [recheck]);
 
+  /** Shows an alert to open settings. */
   const openSettings = useCallback(() => {
     // show alert to open settings
     Alert.alert(t('backgroundLocationPermission.openSettings.title'), t('backgroundLocationPermission.openSettings.description'), [
       {
-        text: t('backgroundLocationPermission.openSettings.button'),
+        text: t('permissionDialog.openSettings.button'),
         style: 'default',
         onPress: () => Linking.openSettings(),
       },

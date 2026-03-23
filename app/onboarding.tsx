@@ -154,6 +154,15 @@ export default function OnboardingScreen() {
       return;
     }
 
+    const { error: filterError } = await supabase.from('user_filters').upsert({
+      user_id: user.id,
+    });
+
+    if (filterError) {
+      handleError(filterError.message);
+      return;
+    }
+
     try {
       await uploadAll();
     } catch (e: unknown) {

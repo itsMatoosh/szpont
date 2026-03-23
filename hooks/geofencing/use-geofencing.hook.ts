@@ -6,7 +6,6 @@ import { getGeofencesByCity } from '@/util/geofences/geofences.util';
 import {
   clearGeofencingState,
   GEOFENCE_TASK,
-  setCachedZoneNames,
 } from '@/util/geofencing/geofencing.util';
 import { exitZone } from '@/util/presence/presence.util';
 
@@ -42,13 +41,6 @@ export function useGeofencing(cityId: string | undefined): void {
 
       const geofences = await getGeofencesByCity(cityId!);
       if (cancelled || geofences.length === 0) return;
-
-      // Cache zone names keyed by zone_id for background notifications
-      const names: Record<string, string> = {};
-      for (const gf of geofences) {
-        names[gf.zone_id] = gf.zone_name;
-      }
-      setCachedZoneNames(names);
 
       // Build expo-location geofence regions
       const regions: Location.LocationRegion[] = geofences.map((gf) => ({
